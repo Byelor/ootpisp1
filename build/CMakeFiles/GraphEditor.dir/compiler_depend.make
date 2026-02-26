@@ -3509,6 +3509,9 @@ CMakeFiles/GraphEditor.dir/src/main.cpp.o: /Users/andreika/Desktop/norm/src/main
   /Users/andreika/Desktop/norm/src/core/Figure.hpp \
   /Users/andreika/Desktop/norm/src/core/Figures.hpp \
   /Users/andreika/Desktop/norm/src/core/Scene.hpp \
+  /Users/andreika/Desktop/norm/src/core/Viewport.hpp \
+  /Users/andreika/Desktop/norm/src/core/Figure.hpp \
+  /Users/andreika/Desktop/norm/src/core/Viewport.hpp \
   /Users/andreika/Desktop/norm/src/ui/PropertiesPanel.hpp \
   /Users/andreika/Desktop/norm/src/ui/Toolbar.hpp
 
@@ -4394,6 +4397,7 @@ CMakeFiles/GraphEditor.dir/src/ui/PropertiesPanel.cpp.o: /Users/andreika/Desktop
   _deps/sfml-src/include/SFML/Window/WindowHandle.hpp \
   _deps/sfml-src/include/SFML/Window/WindowStyle.hpp \
   /Users/andreika/Desktop/norm/src/core/Figure.hpp \
+  /Users/andreika/Desktop/norm/src/core/Viewport.hpp \
   /Users/andreika/Desktop/norm/src/ui/PropertiesPanel.hpp
 
 CMakeFiles/GraphEditor.dir/src/ui/Toolbar.cpp.o: /Users/andreika/Desktop/norm/src/ui/Toolbar.cpp \
@@ -4531,6 +4535,8 @@ CMakeFiles/GraphEditor.dir/src/ui/Toolbar.cpp.o: /Users/andreika/Desktop/norm/sr
 /Users/andreika/Desktop/norm/src/ui/Toolbar.hpp:
 
 /Users/andreika/Desktop/norm/src/ui/PropertiesPanel.hpp:
+
+/Users/andreika/Desktop/norm/src/core/Viewport.hpp:
 
 _deps/imgui-sfml-src/imconfig-SFML.h:
 

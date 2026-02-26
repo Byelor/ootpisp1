@@ -1,9 +1,12 @@
 #include "PropertiesPanel.hpp"
+#include <algorithm>
 #include <string>
 
 namespace ui {
 
-void PropertiesPanel::render(core::Figure *selectedFigure) {
+bool PropertiesPanel::render(core::Figure *selectedFigure,
+                             core::Viewport &viewport) {
+  bool fitRequested = false;
   ImGui::SetNextWindowPos(ImVec2(ImGui::GetIO().DisplaySize.x - 280, 0),
                           ImGuiCond_Always);
   ImGui::SetNextWindowSize(ImVec2(280, ImGui::GetIO().DisplaySize.y),
@@ -15,10 +18,53 @@ void PropertiesPanel::render(core::Figure *selectedFigure) {
 
   ImGui::Begin("Properties", nullptr, flags);
 
+  ImGui::Text("WORLD ORIGIN (PAN)");
+  float origin[2] = {viewport.worldOrigin.x, viewport.worldOrigin.y};
+  if (ImGui::DragFloat2("##WorldOrigin", origin, 1.0f)) {
+    viewport.worldOrigin.x = origin[0];
+    viewport.worldOrigin.y = origin[1];
+  }
+  if (ImGui::Button("Reset View To (0,0)")) {
+    viewport.worldOrigin = sf::Vector2f(0.f, 0.f);
+  }
+
+  ImGui::Text("ZOOM");
+  if (ImGui::Button("-")) {
+    viewport.zoomAt(sf::Vector2f(ImGui::GetIO().DisplaySize.x / 2.f,
+                                 ImGui::GetIO().DisplaySize.y / 2.f),
+                    1.f / 1.1f);
+  }
+  ImGui::SameLine();
+
+  float zoomPct = viewport.zoom * 100.f;
+  ImGui::SetNextItemWidth(80.f);
+  if (ImGui::DragFloat("##Zoom", &zoomPct, 5.0f, 5.0f, 5000.0f, "%.0f%%")) {
+    float oldZoom = viewport.zoom;
+    viewport.zoom = std::clamp(zoomPct / 100.f, 0.05f, 50.f);
+    sf::Vector2f screenCenter(ImGui::GetIO().DisplaySize.x / 2.f,
+                              ImGui::GetIO().DisplaySize.y / 2.f);
+    sf::Vector2f worldPoint = (screenCenter - viewport.worldOrigin) / oldZoom;
+    viewport.worldOrigin = screenCenter - worldPoint * viewport.zoom;
+  }
+
+  ImGui::SameLine();
+  if (ImGui::Button("+")) {
+    viewport.zoomAt(sf::Vector2f(ImGui::GetIO().DisplaySize.x / 2.f,
+                                 ImGui::GetIO().DisplaySize.y / 2.f),
+                    1.1f);
+  }
+
+  if (ImGui::Button("Fit to Screen")) {
+    fitRequested = true;
+  }
+
+  ImGui::Separator();
+  ImGui::Spacing();
+
   if (!selectedFigure) {
     ImGui::TextDisabled("No figure selected.");
     ImGui::End();
-    return;
+    return fitRequested;
   }
 
   ImGui::Text("FIGURE PROPERTIES");
@@ -67,7 +113,43 @@ void PropertiesPanel::render(core::Figure *selectedFigure) {
   }
   ImGui::Spacing();
 
-  // 4. Edges
+  // 4. Rotation
+  ImGui::Separator();
+  ImGui::Text("Rotation");
+  float rotation = selectedFigure->rotationAngle;
+  if (ImGui::DragFloat("Angle", &rotation, 1.0f, -360.0f, 360.0f, "%.1f deg")) {
+    selectedFigure->rotationAngle = rotation;
+  }
+  if (ImGui::Button("Reset Rotation")) {
+    selectedFigure->rotationAngle = 0.f;
+  }
+  ImGui::Spacing();
+
+  // 6. Scale
+  ImGui::Separator();
+  ImGui::Text("Scale");
+  ImGui::Checkbox("Lock Proportions", &m_lockProportions);
+
+  float scalePct[2] = {selectedFigure->scale.x * 100.f,
+                       selectedFigure->scale.y * 100.f};
+  if (ImGui::DragFloat2("Scale %%##Scale", scalePct, 1.0f, 1.0f, 1000.f,
+                        "%.1f%%")) {
+    if (m_lockProportions) {
+      if (scalePct[0] != selectedFigure->scale.x * 100.f) {
+        scalePct[1] = scalePct[0];
+      } else if (scalePct[1] != selectedFigure->scale.y * 100.f) {
+        scalePct[0] = scalePct[1];
+      }
+    }
+    selectedFigure->scale.x = scalePct[0] / 100.f;
+    selectedFigure->scale.y = scalePct[1] / 100.f;
+  }
+  if (ImGui::Button("Reset Scale")) {
+    selectedFigure->scale = sf::Vector2f(1.f, 1.f);
+  }
+  ImGui::Spacing();
+
+  // 7. Edges
   if (!selectedFigure->edges.empty()) {
     ImGui::Separator();
     ImGui::Text("Edges");
@@ -108,6 +190,7 @@ void PropertiesPanel::render(core::Figure *selectedFigure) {
                       bounds.top + bounds.height);
 
   ImGui::End();
+  return fitRequested;
 }
 
 } // namespace ui

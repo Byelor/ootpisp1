@@ -28,10 +28,46 @@ static bool lineIntersection(sf::Vector2f p1, sf::Vector2f d1, sf::Vector2f p2,
   return true;
 }
 
+sf::Vector2f Figure::getAbsoluteVertex(sf::Vector2f relative) const {
+  float sx = relative.x * scale.x;
+  float sy = relative.y * scale.y;
+  float rad = rotationAngle * M_PI / 180.f;
+  float rx = sx * std::cos(rad) - sy * std::sin(rad);
+  float ry = sx * std::sin(rad) + sy * std::cos(rad);
+  return anchor + sf::Vector2f(rx, ry);
+}
+
 sf::FloatRect Figure::getBoundingBox() const {
   auto vertices = getVertices();
   if (vertices.empty()) {
     return sf::FloatRect(anchor.x, anchor.y, 0.f, 0.f);
+  }
+
+  sf::Vector2f v0 = getAbsoluteVertex(vertices[0]);
+  float minX = v0.x;
+  float maxX = v0.x;
+  float minY = v0.y;
+  float maxY = v0.y;
+
+  for (const auto &v : vertices) {
+    sf::Vector2f absV = getAbsoluteVertex(v);
+    if (absV.x < minX)
+      minX = absV.x;
+    if (absV.x > maxX)
+      maxX = absV.x;
+    if (absV.y < minY)
+      minY = absV.y;
+    if (absV.y > maxY)
+      maxY = absV.y;
+  }
+
+  return sf::FloatRect(minX, minY, maxX - minX, maxY - minY);
+}
+
+sf::FloatRect Figure::getLocalBoundingBox() const {
+  auto vertices = getVertices();
+  if (vertices.empty()) {
+    return sf::FloatRect(0.f, 0.f, 0.f, 0.f);
   }
 
   float minX = vertices[0].x;
@@ -50,9 +86,7 @@ sf::FloatRect Figure::getBoundingBox() const {
       maxY = v.y;
   }
 
-  // Convert relative to absolute
-  return sf::FloatRect(anchor.x + minX, anchor.y + minY, maxX - minX,
-                       maxY - minY);
+  return sf::FloatRect(minX, minY, maxX - minX, maxY - minY);
 }
 
 void Figure::move(sf::Vector2f delta) { anchor += delta; }
@@ -62,8 +96,8 @@ bool Figure::contains(sf::Vector2f point) const {
   bool c = false;
   int nvert = vertices.size();
   for (int i = 0, j = nvert - 1; i < nvert; j = i++) {
-    sf::Vector2f vi = anchor + vertices[i];
-    sf::Vector2f vj = anchor + vertices[j];
+    sf::Vector2f vi = getAbsoluteVertex(vertices[i]);
+    sf::Vector2f vj = getAbsoluteVertex(vertices[j]);
     if (((vi.y > point.y) != (vj.y > point.y)) &&
         (point.x < (vj.x - vi.x) * (point.y - vi.y) / (vj.y - vi.y) + vi.x))
       c = !c;
@@ -83,6 +117,8 @@ void Figure::draw(sf::RenderTarget &target) const {
     fillShape.setPoint(i, verticesRelative[i]);
   }
   fillShape.setPosition(anchor);
+  fillShape.setRotation(rotationAngle);
+  fillShape.setScale(scale);
   fillShape.setFillColor(fillColor);
   target.draw(fillShape);
 
@@ -93,7 +129,7 @@ void Figure::draw(sf::RenderTarget &target) const {
   // Convert to absolute vertices
   std::vector<sf::Vector2f> V(n);
   for (int i = 0; i < n; ++i) {
-    V[i] = anchor + verticesRelative[i];
+    V[i] = getAbsoluteVertex(verticesRelative[i]);
   }
 
   std::vector<sf::Vector2f> edgeNormals(n);

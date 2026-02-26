@@ -1,7 +1,7 @@
 CMakeFiles/GraphEditor.dir/src/ui/PropertiesPanel.cpp.o: \
   /Users/andreika/Desktop/norm/src/ui/PropertiesPanel.cpp \
   /Users/andreika/Desktop/norm/src/ui/PropertiesPanel.hpp \
-  /Users/andreika/Desktop/norm/src/core/Figure.hpp \
+  /Users/andreika/Desktop/norm/src/ui/../core/Figure.hpp \
   /Users/andreika/Desktop/norm/build/_deps/sfml-src/include/SFML/Graphics.hpp \
   /Users/andreika/Desktop/norm/build/_deps/sfml-src/include/SFML/Window.hpp \
   /Users/andreika/Desktop/norm/build/_deps/sfml-src/include/SFML/System.hpp \
@@ -872,6 +872,7 @@ CMakeFiles/GraphEditor.dir/src/ui/PropertiesPanel.cpp.o: \
   /Users/andreika/Desktop/norm/build/_deps/sfml-src/include/SFML/Graphics/Sprite.hpp \
   /Users/andreika/Desktop/norm/build/_deps/sfml-src/include/SFML/Graphics/Text.hpp \
   /Users/andreika/Desktop/norm/build/_deps/sfml-src/include/SFML/Graphics/VertexBuffer.hpp \
+  /Users/andreika/Desktop/norm/src/ui/../core/Viewport.hpp \
   /Users/andreika/Desktop/norm/build/_deps/imgui-src/imgui.h \
   /Users/andreika/Desktop/norm/build/_deps/imgui-sfml-src/imconfig-SFML.h \
   /Users/andreika/Desktop/norm/build/_deps/imgui-sfml-src/imgui-SFML_export.h \
