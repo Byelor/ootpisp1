@@ -368,6 +368,54 @@ src/main.cpp.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/GraphEditor.dir/build.make CMakeFiles/GraphEditor.dir/src/main.cpp.s
 .PHONY : src/main.cpp.s
 
+src/ui/PropertiesPanel.o: src/ui/PropertiesPanel.cpp.o
+.PHONY : src/ui/PropertiesPanel.o
+
+# target to build an object file
+src/ui/PropertiesPanel.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/GraphEditor.dir/build.make CMakeFiles/GraphEditor.dir/src/ui/PropertiesPanel.cpp.o
+.PHONY : src/ui/PropertiesPanel.cpp.o
+
+src/ui/PropertiesPanel.i: src/ui/PropertiesPanel.cpp.i
+.PHONY : src/ui/PropertiesPanel.i
+
+# target to preprocess a source file
+src/ui/PropertiesPanel.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/GraphEditor.dir/build.make CMakeFiles/GraphEditor.dir/src/ui/PropertiesPanel.cpp.i
+.PHONY : src/ui/PropertiesPanel.cpp.i
+
+src/ui/PropertiesPanel.s: src/ui/PropertiesPanel.cpp.s
+.PHONY : src/ui/PropertiesPanel.s
+
+# target to generate assembly for a file
+src/ui/PropertiesPanel.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/GraphEditor.dir/build.make CMakeFiles/GraphEditor.dir/src/ui/PropertiesPanel.cpp.s
+.PHONY : src/ui/PropertiesPanel.cpp.s
+
+src/ui/Toolbar.o: src/ui/Toolbar.cpp.o
+.PHONY : src/ui/Toolbar.o
+
+# target to build an object file
+src/ui/Toolbar.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/GraphEditor.dir/build.make CMakeFiles/GraphEditor.dir/src/ui/Toolbar.cpp.o
+.PHONY : src/ui/Toolbar.cpp.o
+
+src/ui/Toolbar.i: src/ui/Toolbar.cpp.i
+.PHONY : src/ui/Toolbar.i
+
+# target to preprocess a source file
+src/ui/Toolbar.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/GraphEditor.dir/build.make CMakeFiles/GraphEditor.dir/src/ui/Toolbar.cpp.i
+.PHONY : src/ui/Toolbar.cpp.i
+
+src/ui/Toolbar.s: src/ui/Toolbar.cpp.s
+.PHONY : src/ui/Toolbar.s
+
+# target to generate assembly for a file
+src/ui/Toolbar.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/GraphEditor.dir/build.make CMakeFiles/GraphEditor.dir/src/ui/Toolbar.cpp.s
+.PHONY : src/ui/Toolbar.cpp.s
+
 # Help Target
 help:
 	@echo "The following are some of the valid targets for this Makefile:"
@@ -401,6 +449,12 @@ help:
 	@echo "... src/main.o"
 	@echo "... src/main.i"
 	@echo "... src/main.s"
+	@echo "... src/ui/PropertiesPanel.o"
+	@echo "... src/ui/PropertiesPanel.i"
+	@echo "... src/ui/PropertiesPanel.s"
+	@echo "... src/ui/Toolbar.o"
+	@echo "... src/ui/Toolbar.i"
+	@echo "... src/ui/Toolbar.s"
 .PHONY : help
 
 

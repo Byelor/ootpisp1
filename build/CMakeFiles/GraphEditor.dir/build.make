@@ -128,12 +128,42 @@ CMakeFiles/GraphEditor.dir/src/core/Scene.cpp.s: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling CXX source to assembly CMakeFiles/GraphEditor.dir/src/core/Scene.cpp.s"
 	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /Users/andreika/Desktop/norm/src/core/Scene.cpp -o CMakeFiles/GraphEditor.dir/src/core/Scene.cpp.s
 
+CMakeFiles/GraphEditor.dir/src/ui/Toolbar.cpp.o: CMakeFiles/GraphEditor.dir/flags.make
+CMakeFiles/GraphEditor.dir/src/ui/Toolbar.cpp.o: /Users/andreika/Desktop/norm/src/ui/Toolbar.cpp
+CMakeFiles/GraphEditor.dir/src/ui/Toolbar.cpp.o: CMakeFiles/GraphEditor.dir/compiler_depend.ts
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/andreika/Desktop/norm/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_5) "Building CXX object CMakeFiles/GraphEditor.dir/src/ui/Toolbar.cpp.o"
+	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/GraphEditor.dir/src/ui/Toolbar.cpp.o -MF CMakeFiles/GraphEditor.dir/src/ui/Toolbar.cpp.o.d -o CMakeFiles/GraphEditor.dir/src/ui/Toolbar.cpp.o -c /Users/andreika/Desktop/norm/src/ui/Toolbar.cpp
+
+CMakeFiles/GraphEditor.dir/src/ui/Toolbar.cpp.i: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Preprocessing CXX source to CMakeFiles/GraphEditor.dir/src/ui/Toolbar.cpp.i"
+	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /Users/andreika/Desktop/norm/src/ui/Toolbar.cpp > CMakeFiles/GraphEditor.dir/src/ui/Toolbar.cpp.i
+
+CMakeFiles/GraphEditor.dir/src/ui/Toolbar.cpp.s: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling CXX source to assembly CMakeFiles/GraphEditor.dir/src/ui/Toolbar.cpp.s"
+	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /Users/andreika/Desktop/norm/src/ui/Toolbar.cpp -o CMakeFiles/GraphEditor.dir/src/ui/Toolbar.cpp.s
+
+CMakeFiles/GraphEditor.dir/src/ui/PropertiesPanel.cpp.o: CMakeFiles/GraphEditor.dir/flags.make
+CMakeFiles/GraphEditor.dir/src/ui/PropertiesPanel.cpp.o: /Users/andreika/Desktop/norm/src/ui/PropertiesPanel.cpp
+CMakeFiles/GraphEditor.dir/src/ui/PropertiesPanel.cpp.o: CMakeFiles/GraphEditor.dir/compiler_depend.ts
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/andreika/Desktop/norm/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_6) "Building CXX object CMakeFiles/GraphEditor.dir/src/ui/PropertiesPanel.cpp.o"
+	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/GraphEditor.dir/src/ui/PropertiesPanel.cpp.o -MF CMakeFiles/GraphEditor.dir/src/ui/PropertiesPanel.cpp.o.d -o CMakeFiles/GraphEditor.dir/src/ui/PropertiesPanel.cpp.o -c /Users/andreika/Desktop/norm/src/ui/PropertiesPanel.cpp
+
+CMakeFiles/GraphEditor.dir/src/ui/PropertiesPanel.cpp.i: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Preprocessing CXX source to CMakeFiles/GraphEditor.dir/src/ui/PropertiesPanel.cpp.i"
+	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /Users/andreika/Desktop/norm/src/ui/PropertiesPanel.cpp > CMakeFiles/GraphEditor.dir/src/ui/PropertiesPanel.cpp.i
+
+CMakeFiles/GraphEditor.dir/src/ui/PropertiesPanel.cpp.s: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling CXX source to assembly CMakeFiles/GraphEditor.dir/src/ui/PropertiesPanel.cpp.s"
+	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /Users/andreika/Desktop/norm/src/ui/PropertiesPanel.cpp -o CMakeFiles/GraphEditor.dir/src/ui/PropertiesPanel.cpp.s
+
 # Object files for target GraphEditor
 GraphEditor_OBJECTS = \
 "CMakeFiles/GraphEditor.dir/src/main.cpp.o" \
 "CMakeFiles/GraphEditor.dir/src/core/Figure.cpp.o" \
 "CMakeFiles/GraphEditor.dir/src/core/Figures.cpp.o" \
-"CMakeFiles/GraphEditor.dir/src/core/Scene.cpp.o"
+"CMakeFiles/GraphEditor.dir/src/core/Scene.cpp.o" \
+"CMakeFiles/GraphEditor.dir/src/ui/Toolbar.cpp.o" \
+"CMakeFiles/GraphEditor.dir/src/ui/PropertiesPanel.cpp.o"
 
 # External object files for target GraphEditor
 GraphEditor_EXTERNAL_OBJECTS =
@@ -142,6 +172,8 @@ GraphEditor: CMakeFiles/GraphEditor.dir/src/main.cpp.o
 GraphEditor: CMakeFiles/GraphEditor.dir/src/core/Figure.cpp.o
 GraphEditor: CMakeFiles/GraphEditor.dir/src/core/Figures.cpp.o
 GraphEditor: CMakeFiles/GraphEditor.dir/src/core/Scene.cpp.o
+GraphEditor: CMakeFiles/GraphEditor.dir/src/ui/Toolbar.cpp.o
+GraphEditor: CMakeFiles/GraphEditor.dir/src/ui/PropertiesPanel.cpp.o
 GraphEditor: CMakeFiles/GraphEditor.dir/build.make
 GraphEditor: _deps/imgui-sfml-build/libImGui-SFML.dylib
 GraphEditor: _deps/sfml-build/lib/libsfml-graphics.2.6.2.dylib
@@ -149,7 +181,7 @@ GraphEditor: _deps/sfml-build/lib/libsfml-window.2.6.2.dylib
 GraphEditor: _deps/sfml-build/lib/libsfml-system.2.6.2.dylib
 GraphEditor: /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/OpenGL.framework
 GraphEditor: CMakeFiles/GraphEditor.dir/link.txt
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --bold --progress-dir=/Users/andreika/Desktop/norm/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_5) "Linking CXX executable GraphEditor"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --bold --progress-dir=/Users/andreika/Desktop/norm/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_7) "Linking CXX executable GraphEditor"
 	$(CMAKE_COMMAND) -E cmake_link_script CMakeFiles/GraphEditor.dir/link.txt --verbose=$(VERBOSE)
 
 # Rule to build all files generated by this target.

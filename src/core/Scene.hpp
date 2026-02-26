@@ -23,8 +23,13 @@ public:
     return m_figures;
   }
 
+  // Selected figure
+  void setSelectedFigure(Figure *fig) { m_selectedFigure = fig; }
+  Figure *getSelectedFigure() const { return m_selectedFigure; }
+
 private:
   std::vector<std::unique_ptr<Figure>> m_figures;
+  Figure *m_selectedFigure = nullptr;
 };
 
 } // namespace core

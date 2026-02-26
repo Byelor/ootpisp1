@@ -7,6 +7,10 @@ file(REMOVE_RECURSE
   "CMakeFiles/GraphEditor.dir/src/core/Scene.cpp.o.d"
   "CMakeFiles/GraphEditor.dir/src/main.cpp.o"
   "CMakeFiles/GraphEditor.dir/src/main.cpp.o.d"
+  "CMakeFiles/GraphEditor.dir/src/ui/PropertiesPanel.cpp.o"
+  "CMakeFiles/GraphEditor.dir/src/ui/PropertiesPanel.cpp.o.d"
+  "CMakeFiles/GraphEditor.dir/src/ui/Toolbar.cpp.o"
+  "CMakeFiles/GraphEditor.dir/src/ui/Toolbar.cpp.o.d"
   "GraphEditor"
   "GraphEditor.pdb"
 )

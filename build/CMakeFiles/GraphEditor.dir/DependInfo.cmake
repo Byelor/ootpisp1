@@ -12,6 +12,8 @@ set(CMAKE_DEPENDS_DEPENDENCY_FILES
   "/Users/andreika/Desktop/norm/src/core/Figures.cpp" "CMakeFiles/GraphEditor.dir/src/core/Figures.cpp.o" "gcc" "CMakeFiles/GraphEditor.dir/src/core/Figures.cpp.o.d"
   "/Users/andreika/Desktop/norm/src/core/Scene.cpp" "CMakeFiles/GraphEditor.dir/src/core/Scene.cpp.o" "gcc" "CMakeFiles/GraphEditor.dir/src/core/Scene.cpp.o.d"
   "/Users/andreika/Desktop/norm/src/main.cpp" "CMakeFiles/GraphEditor.dir/src/main.cpp.o" "gcc" "CMakeFiles/GraphEditor.dir/src/main.cpp.o.d"
+  "/Users/andreika/Desktop/norm/src/ui/PropertiesPanel.cpp" "CMakeFiles/GraphEditor.dir/src/ui/PropertiesPanel.cpp.o" "gcc" "CMakeFiles/GraphEditor.dir/src/ui/PropertiesPanel.cpp.o.d"
+  "/Users/andreika/Desktop/norm/src/ui/Toolbar.cpp" "CMakeFiles/GraphEditor.dir/src/ui/Toolbar.cpp.o" "gcc" "CMakeFiles/GraphEditor.dir/src/ui/Toolbar.cpp.o.d"
   )
 
 # Targets to which this target links which contain Fortran sources.
