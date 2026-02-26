@@ -8,10 +8,6 @@ class Rectangle : public Figure {
 public:
   Rectangle(float width, float height);
 
-  std::vector<sf::Vector2f> getVertices() const override;
-  void draw(sf::RenderTarget &target) const override;
-  bool contains(sf::Vector2f point) const override;
-
 private:
   float m_width;
   float m_height;
@@ -20,10 +16,6 @@ private:
 class Triangle : public Figure {
 public:
   Triangle(float base, float height);
-
-  std::vector<sf::Vector2f> getVertices() const override;
-  void draw(sf::RenderTarget &target) const override;
-  bool contains(sf::Vector2f point) const override;
 
 private:
   float m_base;
@@ -34,10 +26,6 @@ class Hexagon : public Figure {
 public:
   Hexagon(float radius);
 
-  std::vector<sf::Vector2f> getVertices() const override;
-  void draw(sf::RenderTarget &target) const override;
-  bool contains(sf::Vector2f point) const override;
-
 private:
   float m_radius;
 };
@@ -45,10 +33,6 @@ private:
 class Rhombus : public Figure {
 public:
   Rhombus(float width, float height);
-
-  std::vector<sf::Vector2f> getVertices() const override;
-  void draw(sf::RenderTarget &target) const override;
-  bool contains(sf::Vector2f point) const override;
 
 private:
   float m_width;
@@ -58,10 +42,6 @@ private:
 class Trapezoid : public Figure {
 public:
   Trapezoid(float topWidth, float bottomWidth, float height);
-
-  std::vector<sf::Vector2f> getVertices() const override;
-  void draw(sf::RenderTarget &target) const override;
-  bool contains(sf::Vector2f point) const override;
 
 private:
   float m_topWidth;

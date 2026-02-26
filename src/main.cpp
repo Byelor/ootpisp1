@@ -167,70 +167,73 @@ int main() {
           }
         }
       }
-      // Update Cursors
-      if (!io.WantCaptureMouse) {
-        sf::Vector2f mousePos =
-            window.mapPixelToCoords(sf::Mouse::getPosition(window));
-        if (currentTool != ui::Tool::Select) {
-          window.setMouseCursor(cursorCross);
-        } else if (isDragging) {
-          window.setMouseCursor(cursorSizeAll);
-        } else if (scene.hitTest(mousePos) != nullptr) {
-          window.setMouseCursor(cursorHand);
-        } else {
-          window.setMouseCursor(cursorArrow);
-        }
+    }
+
+    // Update Cursors (Should be done every frame outside of event loop, or
+    // check WantCaptureMouse)
+    ImGuiIO &io = ImGui::GetIO();
+    if (!io.WantCaptureMouse) {
+      sf::Vector2f mousePos =
+          window.mapPixelToCoords(sf::Mouse::getPosition(window));
+      if (currentTool != ui::Tool::Select) {
+        window.setMouseCursor(cursorCross);
+      } else if (isDragging) {
+        window.setMouseCursor(cursorSizeAll);
+      } else if (scene.hitTest(mousePos) != nullptr) {
+        window.setMouseCursor(cursorHand);
       } else {
         window.setMouseCursor(cursorArrow);
       }
-
-      ImGui::SFML::Update(window, deltaClock.restart());
-
-      // Render UI
-      toolbar.render(currentTool);
-      propertiesPanel.render(scene.getSelectedFigure());
-
-      window.clear(sf::Color(240, 240, 240));
-
-      // Draw Grid
-      if (showGrid) {
-        sf::VertexArray grid(sf::Lines);
-        sf::Color gridColor(200, 200, 200);
-        int gridSize = 50;
-        sf::Vector2u size = window.getSize();
-        for (int x = 0; x < size.x; x += gridSize) {
-          grid.append(sf::Vertex(sf::Vector2f(x, 0), gridColor));
-          grid.append(sf::Vertex(sf::Vector2f(x, size.y), gridColor));
-        }
-        for (int y = 0; y < size.y; y += gridSize) {
-          grid.append(sf::Vertex(sf::Vector2f(0, y), gridColor));
-          grid.append(sf::Vertex(sf::Vector2f(size.x, y), gridColor));
-        }
-        window.draw(grid);
-      }
-
-      scene.drawAll(window);
-
-      // Draw preview box if creating
-      if (isCreating && currentTool != ui::Tool::Select) {
-        sf::Vector2f mousePos =
-            window.mapPixelToCoords(sf::Mouse::getPosition(window));
-        sf::RectangleShape preview;
-        preview.setPosition(std::min(createStartPos.x, mousePos.x),
-                            std::min(createStartPos.y, mousePos.y));
-        preview.setSize(sf::Vector2f(std::abs(mousePos.x - createStartPos.x),
-                                     std::abs(mousePos.y - createStartPos.y)));
-        preview.setFillColor(sf::Color(150, 150, 150, 100)); // Semi-transparent
-        preview.setOutlineColor(sf::Color(100, 100, 100, 200));
-        preview.setOutlineThickness(1.f);
-        window.draw(preview);
-      }
-
-      ImGui::SFML::Render(window);
-      window.display();
+    } else {
+      window.setMouseCursor(cursorArrow);
     }
 
-    ImGui::SFML::Shutdown();
-    return 0;
+    ImGui::SFML::Update(window, deltaClock.restart());
+
+    // Render UI
+    toolbar.render(currentTool);
+    propertiesPanel.render(scene.getSelectedFigure());
+
+    window.clear(sf::Color(240, 240, 240));
+
+    // Draw Grid
+    if (showGrid) {
+      sf::VertexArray grid(sf::Lines);
+      sf::Color gridColor(200, 200, 200);
+      int gridSize = 50;
+      sf::Vector2u size = window.getSize();
+      for (int x = 0; x < size.x; x += gridSize) {
+        grid.append(sf::Vertex(sf::Vector2f(x, 0), gridColor));
+        grid.append(sf::Vertex(sf::Vector2f(x, size.y), gridColor));
+      }
+      for (int y = 0; y < size.y; y += gridSize) {
+        grid.append(sf::Vertex(sf::Vector2f(0, y), gridColor));
+        grid.append(sf::Vertex(sf::Vector2f(size.x, y), gridColor));
+      }
+      window.draw(grid);
+    }
+
+    scene.drawAll(window);
+
+    // Draw preview box if creating
+    if (isCreating && currentTool != ui::Tool::Select) {
+      sf::Vector2f mousePos =
+          window.mapPixelToCoords(sf::Mouse::getPosition(window));
+      sf::RectangleShape preview;
+      preview.setPosition(std::min(createStartPos.x, mousePos.x),
+                          std::min(createStartPos.y, mousePos.y));
+      preview.setSize(sf::Vector2f(std::abs(mousePos.x - createStartPos.x),
+                                   std::abs(mousePos.y - createStartPos.y)));
+      preview.setFillColor(sf::Color(150, 150, 150, 100)); // Semi-transparent
+      preview.setOutlineColor(sf::Color(100, 100, 100, 200));
+      preview.setOutlineThickness(1.f);
+      window.draw(preview);
+    }
+
+    ImGui::SFML::Render(window);
+    window.display();
   }
+
+  ImGui::SFML::Shutdown();
+  return 0;
 }

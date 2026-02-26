@@ -28,16 +28,23 @@ public:
   sf::FloatRect getBoundingBox() const;
 
   // Get relative vertices (offset from anchor)
-  virtual std::vector<sf::Vector2f> getVertices() const = 0;
+  virtual const std::vector<sf::Vector2f> &getVertices() const {
+    return m_vertices;
+  }
+  virtual std::vector<sf::Vector2f> &getVerticesMutable() { return m_vertices; }
 
   // Draw the figure (fill and outline)
-  virtual void draw(sf::RenderTarget &target) const = 0;
+  virtual void draw(sf::RenderTarget &target) const;
 
   // Check if the figure contains a given absolute point
-  virtual bool contains(sf::Vector2f point) const = 0;
+  virtual bool contains(sf::Vector2f point) const;
 
   // Move the figure relative to its current anchor
   void move(sf::Vector2f delta);
+
+protected:
+  // Relative vertices for this figure
+  std::vector<sf::Vector2f> m_vertices;
 };
 
 } // namespace core
