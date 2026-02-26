@@ -14,8 +14,11 @@ class Figure {
 public:
   virtual ~Figure() = default;
 
-  // Anchor point (absolute coordinates on the canvas)
+  // Anchor point (relative to parentOrigin)
   sf::Vector2f anchor{0.f, 0.f};
+
+  // Parent origin offset
+  sf::Vector2f parentOrigin{0.f, 0.f};
 
   // Fill color
   sf::Color fillColor = sf::Color::White;

@@ -66,4 +66,29 @@ void Scene::drawAll(sf::RenderTarget &target) const {
   }
 }
 
+void Scene::setCustomOrigin(sf::Vector2f newOriginWorld) {
+  for (auto &figure : m_figures) {
+    if (!customOriginActive) {
+      figure->parentOrigin = newOriginWorld;
+      figure->anchor -= newOriginWorld;
+    } else {
+      sf::Vector2f delta = newOriginWorld - customOriginPos;
+      figure->parentOrigin = newOriginWorld;
+      figure->anchor -= delta;
+    }
+  }
+  customOriginPos = newOriginWorld;
+  customOriginActive = true;
+}
+
+void Scene::resetCustomOrigin() {
+  if (!customOriginActive)
+    return;
+  for (auto &figure : m_figures) {
+    figure->anchor += customOriginPos;
+    figure->parentOrigin = sf::Vector2f(0.f, 0.f);
+  }
+  customOriginActive = false;
+}
+
 } // namespace core

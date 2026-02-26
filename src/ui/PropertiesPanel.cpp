@@ -4,8 +4,8 @@
 
 namespace ui {
 
-bool PropertiesPanel::render(core::Figure *selectedFigure,
-                             core::Viewport &viewport) {
+bool PropertiesPanel::render(core::Scene &scene, core::Viewport &viewport) {
+  core::Figure *selectedFigure = scene.getSelectedFigure();
   bool fitRequested = false;
   ImGui::SetNextWindowPos(ImVec2(ImGui::GetIO().DisplaySize.x - 280, 0),
                           ImGuiCond_Always);
@@ -18,14 +18,31 @@ bool PropertiesPanel::render(core::Figure *selectedFigure,
 
   ImGui::Begin("Properties", nullptr, flags);
 
-  ImGui::Text("WORLD ORIGIN (PAN)");
+  ImGui::Text("VIEWPORT PAN");
   float origin[2] = {viewport.worldOrigin.x, viewport.worldOrigin.y};
-  if (ImGui::DragFloat2("##WorldOrigin", origin, 1.0f)) {
+  if (ImGui::DragFloat2("##ViewportPan", origin, 1.0f)) {
     viewport.worldOrigin.x = origin[0];
     viewport.worldOrigin.y = origin[1];
   }
   if (ImGui::Button("Reset View To (0,0)")) {
     viewport.worldOrigin = sf::Vector2f(0.f, 0.f);
+  }
+
+  ImGui::Separator();
+  ImGui::Text("ORIGIN POINT");
+
+  if (!scene.customOriginActive) {
+    ImGui::TextDisabled("(x) Global (0, 0)");
+    ImGui::TextDisabled("( ) Custom");
+  } else {
+    ImGui::TextDisabled("( ) Global (0, 0)");
+    ImGui::TextDisabled("(x) Custom");
+    float custOrigin[2] = {scene.customOriginPos.x, scene.customOriginPos.y};
+    ImGui::InputFloat2("##CustomOrigin", custOrigin, "%.1f",
+                       ImGuiInputTextFlags_ReadOnly);
+    if (ImGui::Button("Reset")) {
+      scene.resetCustomOrigin();
+    }
   }
 
   ImGui::Text("ZOOM");

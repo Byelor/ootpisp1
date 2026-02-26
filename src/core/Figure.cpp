@@ -34,7 +34,7 @@ sf::Vector2f Figure::getAbsoluteVertex(sf::Vector2f relative) const {
   float rad = rotationAngle * M_PI / 180.f;
   float rx = sx * std::cos(rad) - sy * std::sin(rad);
   float ry = sx * std::sin(rad) + sy * std::cos(rad);
-  return anchor + sf::Vector2f(rx, ry);
+  return parentOrigin + anchor + sf::Vector2f(rx, ry);
 }
 
 sf::FloatRect Figure::getBoundingBox() const {
@@ -116,7 +116,7 @@ void Figure::draw(sf::RenderTarget &target) const {
   for (int i = 0; i < n; ++i) {
     fillShape.setPoint(i, verticesRelative[i]);
   }
-  fillShape.setPosition(anchor);
+  fillShape.setPosition(parentOrigin + anchor);
   fillShape.setRotation(rotationAngle);
   fillShape.setScale(scale);
   fillShape.setFillColor(fillColor);

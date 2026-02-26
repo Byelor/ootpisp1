@@ -1,6 +1,7 @@
 CMakeFiles/GraphEditor.dir/src/ui/PropertiesPanel.cpp.o: \
   /Users/andreika/Desktop/norm/src/ui/PropertiesPanel.cpp \
   /Users/andreika/Desktop/norm/src/ui/PropertiesPanel.hpp \
+  /Users/andreika/Desktop/norm/src/ui/../core/Scene.hpp \
   /Users/andreika/Desktop/norm/src/ui/../core/Figure.hpp \
   /Users/andreika/Desktop/norm/build/_deps/sfml-src/include/SFML/Graphics.hpp \
   /Users/andreika/Desktop/norm/build/_deps/sfml-src/include/SFML/Window.hpp \

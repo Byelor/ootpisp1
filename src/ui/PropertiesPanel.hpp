@@ -1,6 +1,6 @@
 #pragma once
 
-#include "../core/Figure.hpp"
+#include "../core/Scene.hpp"
 #include "../core/Viewport.hpp"
 #include <imgui.h>
 
@@ -10,7 +10,7 @@ class PropertiesPanel {
 public:
   // Renders the properties panel and returns true if "Fit to Screen" was
   // requested
-  bool render(core::Figure *selectedFigure, core::Viewport &viewport);
+  bool render(core::Scene &scene, core::Viewport &viewport);
 
 private:
   bool m_lockProportions = true;

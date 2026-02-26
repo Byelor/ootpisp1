@@ -27,6 +27,13 @@ public:
   void setSelectedFigure(Figure *fig) { m_selectedFigure = fig; }
   Figure *getSelectedFigure() const { return m_selectedFigure; }
 
+  // World Origin properties
+  bool customOriginActive = false;
+  sf::Vector2f customOriginPos{0.f, 0.f};
+
+  void setCustomOrigin(sf::Vector2f newOriginWorld);
+  void resetCustomOrigin();
+
 private:
   std::vector<std::unique_ptr<Figure>> m_figures;
   Figure *m_selectedFigure = nullptr;

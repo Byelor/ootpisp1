@@ -4,15 +4,7 @@
 
 namespace ui {
 
-enum class Tool {
-  Select,
-  Rectangle,
-  Triangle,
-  Hexagon,
-  Rhombus,
-  Trapezoid,
-  Origin
-};
+enum class Tool { Select, Rectangle, Triangle, Hexagon, Rhombus, Trapezoid };
 
 class Toolbar {
 public:

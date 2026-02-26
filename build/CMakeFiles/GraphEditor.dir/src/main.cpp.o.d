@@ -875,7 +875,7 @@ CMakeFiles/GraphEditor.dir/src/main.cpp.o: \
   /Users/andreika/Desktop/norm/src/core/Scene.hpp \
   /Users/andreika/Desktop/norm/src/core/Viewport.hpp \
   /Users/andreika/Desktop/norm/src/ui/PropertiesPanel.hpp \
-  /Users/andreika/Desktop/norm/src/ui/../core/Figure.hpp \
+  /Users/andreika/Desktop/norm/src/ui/../core/Scene.hpp \
   /Users/andreika/Desktop/norm/src/ui/../core/Viewport.hpp \
   /Users/andreika/Desktop/norm/build/_deps/imgui-src/imgui.h \
   /Users/andreika/Desktop/norm/build/_deps/imgui-sfml-src/imconfig-SFML.h \

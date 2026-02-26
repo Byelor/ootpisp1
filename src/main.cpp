@@ -71,9 +71,7 @@ int main() {
   sf::Vector2f panStartOrigin;
   sf::Vector2f panStartMouse;
 
-  bool isDraggingOrigin = false;
-  sf::Vector2f dragOriginStartOriginScreen;
-  sf::Vector2f dragOriginStartMouseScreen;
+  bool isDraggingCustomOrigin = false;
 
   sf::Clock clickClock;
   bool wasClicked = false;
@@ -170,8 +168,6 @@ int main() {
           currentTool = ui::Tool::Rhombus;
         else if (event.key.code == sf::Keyboard::Z)
           currentTool = ui::Tool::Trapezoid;
-        else if (event.key.code == sf::Keyboard::O)
-          currentTool = ui::Tool::Origin;
         else if (event.key.code == sf::Keyboard::Escape) {
           if (isNodeEditMode) {
             isNodeEditMode = false;
@@ -224,27 +220,29 @@ int main() {
                                         event.mouseButton.y);
             sf::Vector2f mousePos = viewport.screenToWorld(mousePosScreen);
 
-            if (currentTool == ui::Tool::Origin) {
-              // Click to set new origin
-              sf::Vector2f oldOriginScreen = viewport.worldOrigin;
-              viewport.worldOrigin = mousePosScreen;
-              sf::Vector2f anchorShift =
-                  (oldOriginScreen - mousePosScreen) / viewport.zoom;
-              for (auto &fig : scene.getFigures()) {
-                fig->anchor += anchorShift;
-              }
-              currentTool = ui::Tool::Select;
-              continue;
-            }
+            // Check if clicking custom origin marker
+            if (scene.customOriginActive) {
+              sf::Vector2f customScreen =
+                  viewport.worldToScreen(scene.customOriginPos);
+              if (std::hypot(mousePosScreen.x - customScreen.x,
+                             mousePosScreen.y - customScreen.y) <= 15.f) {
+                bool doubleClickedOrigin = false;
+                if (wasClicked &&
+                    clickClock.getElapsedTime().asSeconds() < 0.3f) {
+                  doubleClickedOrigin = true;
+                  wasClicked = false;
+                } else {
+                  wasClicked = true;
+                  clickClock.restart();
+                }
 
-            // Check if clicking origin marker
-            if (showOriginAxes &&
-                std::hypot(mousePosScreen.x - viewport.worldOrigin.x,
-                           mousePosScreen.y - viewport.worldOrigin.y) <= 15.f) {
-              isDraggingOrigin = true;
-              dragOriginStartMouseScreen = mousePosScreen;
-              dragOriginStartOriginScreen = viewport.worldOrigin;
-              continue;
+                if (doubleClickedOrigin) {
+                  scene.resetCustomOrigin();
+                } else {
+                  isDraggingCustomOrigin = true;
+                }
+                continue;
+              }
             }
 
             if (currentTool == ui::Tool::Select) {
@@ -256,6 +254,11 @@ int main() {
               } else {
                 wasClicked = true;
                 clickClock.restart();
+              }
+
+              if (doubleClicked && !scene.hitTest(mousePos)) {
+                scene.setCustomOrigin(mousePos);
+                continue;
               }
 
               bool altPressed =
@@ -310,15 +313,19 @@ int main() {
                 scaleStartAnchor = selFig->anchor;
               } else if (hitRotationMarker && selFig) {
                 isRotating = true;
-                rotationStartAngle = std::atan2(mousePos.y - selFig->anchor.y,
-                                                mousePos.x - selFig->anchor.x) *
+                sf::Vector2f absoluteAnchor =
+                    selFig->parentOrigin + selFig->anchor;
+                rotationStartAngle = std::atan2(mousePos.y - absoluteAnchor.y,
+                                                mousePos.x - absoluteAnchor.x) *
                                      180.f / M_PI;
                 initialRotation = selFig->rotationAngle;
               } else if (isNodeEditMode && hoveredVertex != -1) {
                 draggingVertexIndex = hoveredVertex;
               } else if (hitAnchor && altPressed && selFig) {
                 isDraggingAnchor = true;
-                dragOffset = mousePos - selFig->anchor;
+                sf::Vector2f absoluteAnchor =
+                    selFig->parentOrigin + selFig->anchor;
+                dragOffset = mousePos - absoluteAnchor;
               } else {
                 core::Figure *hit = scene.hitTest(mousePos);
                 scene.setSelectedFigure(hit);
@@ -329,7 +336,8 @@ int main() {
                   isNodeEditMode = true;
                 } else if (hit) {
                   isDragging = true;
-                  dragOffset = mousePos - hit->anchor;
+                  sf::Vector2f absoluteAnchor = hit->parentOrigin + hit->anchor;
+                  dragOffset = mousePos - absoluteAnchor;
                 }
               }
             } else {
@@ -353,8 +361,8 @@ int main() {
             isPanning = false;
           }
           if (event.mouseButton.button == sf::Mouse::Left) {
-            if (isDraggingOrigin) {
-              isDraggingOrigin = false;
+            if (isDraggingCustomOrigin) {
+              isDraggingCustomOrigin = false;
             }
             if (draggingScaleHandle != ScaleHandle::None) {
               draggingScaleHandle = ScaleHandle::None;
@@ -395,7 +403,13 @@ int main() {
 
               auto fig = createFigure(currentTool, width, height);
               if (fig) {
-                fig->anchor = center;
+                if (scene.customOriginActive) {
+                  fig->parentOrigin = scene.customOriginPos;
+                  fig->anchor = center - scene.customOriginPos;
+                } else {
+                  fig->anchor = center;
+                  fig->parentOrigin = sf::Vector2f(0.f, 0.f);
+                }
                 scene.setSelectedFigure(fig.get());
                 scene.addFigure(std::move(fig));
                 std::cout
@@ -412,20 +426,8 @@ int main() {
           sf::Vector2f mousePos = viewport.screenToWorld(
               sf::Vector2f(event.mouseMove.x, event.mouseMove.y));
 
-          if (isDraggingOrigin) {
-            sf::Vector2f mousePosScreen(event.mouseMove.x, event.mouseMove.y);
-            sf::Vector2f deltaScreen =
-                mousePosScreen - dragOriginStartMouseScreen;
-            sf::Vector2f newOriginScreen =
-                dragOriginStartOriginScreen + deltaScreen;
-
-            sf::Vector2f oldOriginScreen = viewport.worldOrigin;
-            viewport.worldOrigin = newOriginScreen;
-            sf::Vector2f anchorShift =
-                (oldOriginScreen - newOriginScreen) / viewport.zoom;
-            for (auto &fig : scene.getFigures()) {
-              fig->anchor += anchorShift;
-            }
+          if (isDraggingCustomOrigin) {
+            scene.setCustomOrigin(mousePos);
           } else if (isPanning) {
             sf::Vector2f currentMouse(event.mouseMove.x, event.mouseMove.y);
             sf::Vector2f delta = currentMouse - panStartMouse;
@@ -533,10 +535,12 @@ int main() {
             selFig->anchor =
                 scaleStartAnchor + sf::Vector2f(anchor_dx, anchor_dy);
           } else if (isRotating && scene.getSelectedFigure()) {
-            float currentAngle =
-                std::atan2(mousePos.y - scene.getSelectedFigure()->anchor.y,
-                           mousePos.x - scene.getSelectedFigure()->anchor.x) *
-                180.f / M_PI;
+            sf::Vector2f absoluteAnchor =
+                scene.getSelectedFigure()->parentOrigin +
+                scene.getSelectedFigure()->anchor;
+            float currentAngle = std::atan2(mousePos.y - absoluteAnchor.y,
+                                            mousePos.x - absoluteAnchor.x) *
+                                 180.f / M_PI;
             float delta = currentAngle - rotationStartAngle;
             float newRot = initialRotation + delta;
 
@@ -550,8 +554,10 @@ int main() {
                 sf::Vector2f(event.mouseMove.x, event.mouseMove.y));
             auto &verts = scene.getSelectedFigure()->getVerticesMutable();
 
-            sf::Vector2f deltaAbs =
-                mousePos - scene.getSelectedFigure()->anchor;
+            sf::Vector2f absoluteAnchor =
+                scene.getSelectedFigure()->parentOrigin +
+                scene.getSelectedFigure()->anchor;
+            sf::Vector2f deltaAbs = mousePos - absoluteAnchor;
             float invRad =
                 -scene.getSelectedFigure()->rotationAngle * M_PI / 180.f;
             float rx =
@@ -565,17 +571,23 @@ int main() {
           } else if (isDraggingAnchor && scene.getSelectedFigure()) {
             sf::Vector2f mousePos = viewport.screenToWorld(
                 sf::Vector2f(event.mouseMove.x, event.mouseMove.y));
-            sf::Vector2f newAnchor = mousePos - dragOffset;
-            sf::Vector2f delta = newAnchor - scene.getSelectedFigure()->anchor;
+            sf::Vector2f absoluteAnchor =
+                scene.getSelectedFigure()->parentOrigin +
+                scene.getSelectedFigure()->anchor;
+            sf::Vector2f newAbsoluteAnchor = mousePos - dragOffset;
+            sf::Vector2f delta = newAbsoluteAnchor - absoluteAnchor;
 
-            scene.getSelectedFigure()->anchor = newAnchor;
+            scene.getSelectedFigure()->anchor =
+                newAbsoluteAnchor - scene.getSelectedFigure()->parentOrigin;
             for (auto &v : scene.getSelectedFigure()->getVerticesMutable()) {
               v -= delta;
             }
           } else if (isDragging && scene.getSelectedFigure()) {
             sf::Vector2f mousePos = viewport.screenToWorld(
                 sf::Vector2f(event.mouseMove.x, event.mouseMove.y));
-            scene.getSelectedFigure()->anchor = mousePos - dragOffset;
+            sf::Vector2f newAbsoluteAnchor = mousePos - dragOffset;
+            scene.getSelectedFigure()->anchor =
+                newAbsoluteAnchor - scene.getSelectedFigure()->parentOrigin;
           }
         }
       }
@@ -617,18 +629,18 @@ int main() {
                                      ? draggingScaleHandle
                                      : hoveringScaleHandle;
 
-      if (isDraggingOrigin || isPanning ||
+      if (isDraggingCustomOrigin || isPanning ||
           (sf::Keyboard::isKeyPressed(sf::Keyboard::Space) &&
            currentTool == ui::Tool::Select)) {
         window.setMouseCursor(cursorHand);
-      } else if (showOriginAxes &&
-                 std::hypot(sf::Mouse::getPosition(window).x -
-                                viewport.worldOrigin.x,
-                            sf::Mouse::getPosition(window).y -
-                                viewport.worldOrigin.y) <= 15.f) {
+      } else if (scene.customOriginActive &&
+                 std::hypot(
+                     sf::Mouse::getPosition(window).x -
+                         viewport.worldToScreen(scene.customOriginPos).x,
+                     sf::Mouse::getPosition(window).y -
+                         viewport.worldToScreen(scene.customOriginPos).y) <=
+                     15.f) {
         window.setMouseCursor(cursorHand);
-      } else if (currentTool == ui::Tool::Origin) {
-        window.setMouseCursor(cursorCross);
       } else if (activeHandle != ScaleHandle::None) {
         if (activeHandle == ScaleHandle::TL || activeHandle == ScaleHandle::BR)
           window.setMouseCursor(cursorSizeNWSE);
@@ -658,8 +670,7 @@ int main() {
 
     // Render UI
     toolbar.render(currentTool);
-    bool fitRequested =
-        propertiesPanel.render(scene.getSelectedFigure(), viewport);
+    bool fitRequested = propertiesPanel.render(scene, viewport);
 
     if (fitRequested && !scene.getFigures().empty()) {
       const auto &figs = scene.getFigures();
@@ -745,34 +756,34 @@ int main() {
       window.draw(grid);
     }
 
-    // Global Origin Indicator
+    // Origin Indicators
     if (showOriginAxes) {
+      sf::Vector2f activeOrigin = scene.customOriginActive
+                                      ? scene.customOriginPos
+                                      : sf::Vector2f(0.f, 0.f);
+
       sf::VertexArray originAxes(sf::Lines, 4);
       sf::Color axisColor(100, 100, 100, 150);
       sf::Vector2f boundsMin = viewport.screenToWorld(sf::Vector2f(0.f, 0.f));
       sf::Vector2f boundsMax = viewport.screenToWorld(
           sf::Vector2f(window.getSize().x, window.getSize().y));
 
-      originAxes[0] = sf::Vertex(sf::Vector2f(boundsMin.x, 0.f), axisColor);
-      originAxes[1] = sf::Vertex(sf::Vector2f(boundsMax.x, 0.f), axisColor);
-      originAxes[2] = sf::Vertex(sf::Vector2f(0.f, boundsMin.y), axisColor);
-      originAxes[3] = sf::Vertex(sf::Vector2f(0.f, boundsMax.y), axisColor);
+      originAxes[0] =
+          sf::Vertex(sf::Vector2f(boundsMin.x, activeOrigin.y), axisColor);
+      originAxes[1] =
+          sf::Vertex(sf::Vector2f(boundsMax.x, activeOrigin.y), axisColor);
+      originAxes[2] =
+          sf::Vertex(sf::Vector2f(activeOrigin.x, boundsMin.y), axisColor);
+      originAxes[3] =
+          sf::Vertex(sf::Vector2f(activeOrigin.x, boundsMax.y), axisColor);
       window.draw(originAxes);
     }
 
-    // Always draw Movable Origin Marker at (0,0) World
-    if (showOriginAxes) {
+    // Always draw Global gray Marker at (0,0) World
+    {
       float markerScale = 1.f / viewport.zoom;
-      sf::CircleShape circ(6.f * markerScale);
-      circ.setOrigin(6.f * markerScale, 6.f * markerScale);
-      circ.setPosition(0.f, 0.f);
-      circ.setFillColor(sf::Color::Transparent);
-      circ.setOutlineColor(sf::Color(100, 100, 100));
-      circ.setOutlineThickness(1.5f * markerScale);
-      window.draw(circ);
-
       sf::VertexArray cross(sf::Lines, 4);
-      sf::Color crossCol(100, 100, 100);
+      sf::Color crossCol(150, 150, 150);
       cross[0] = sf::Vertex(sf::Vector2f(-12.f * markerScale, 0.f), crossCol);
       cross[1] = sf::Vertex(sf::Vector2f(12.f * markerScale, 0.f), crossCol);
       cross[2] = sf::Vertex(sf::Vector2f(0.f, -12.f * markerScale), crossCol);
@@ -780,11 +791,38 @@ int main() {
       window.draw(cross);
     }
 
+    // Draw Custom Movable Origin Marker at scene.customOriginPos
+    if (scene.customOriginActive) {
+      float markerScale = 1.f / viewport.zoom;
+      sf::Vector2f cPos = scene.customOriginPos;
+
+      sf::CircleShape circ(6.f * markerScale);
+      circ.setOrigin(6.f * markerScale, 6.f * markerScale);
+      circ.setPosition(cPos);
+      circ.setFillColor(sf::Color::Transparent);
+      circ.setOutlineColor(sf::Color(255, 50, 50));
+      circ.setOutlineThickness(1.5f * markerScale);
+      window.draw(circ);
+
+      sf::VertexArray cross(sf::Lines, 4);
+      sf::Color crossCol(255, 50, 50);
+      cross[0] = sf::Vertex(sf::Vector2f(cPos.x - 12.f * markerScale, cPos.y),
+                            crossCol);
+      cross[1] = sf::Vertex(sf::Vector2f(cPos.x + 12.f * markerScale, cPos.y),
+                            crossCol);
+      cross[2] = sf::Vertex(sf::Vector2f(cPos.x, cPos.y - 12.f * markerScale),
+                            crossCol);
+      cross[3] = sf::Vertex(sf::Vector2f(cPos.x, cPos.y + 12.f * markerScale),
+                            crossCol);
+      window.draw(cross);
+    }
+
     scene.drawAll(window);
 
     // Draw Anchor Marker if figure is selected
     if (scene.getSelectedFigure()) {
-      drawAnchorMarker(window, scene.getSelectedFigure()->anchor);
+      drawAnchorMarker(window, scene.getSelectedFigure()->parentOrigin +
+                                   scene.getSelectedFigure()->anchor);
 
       sf::FloatRect localBounds =
           scene.getSelectedFigure()->getLocalBoundingBox();
