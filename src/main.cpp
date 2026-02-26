@@ -58,6 +58,7 @@ int main() {
   ScaleHandle draggingScaleHandle = ScaleHandle::None;
   sf::Vector2f scaleStartMouse;
   sf::Vector2f scaleStartValue;
+  sf::Vector2f scaleStartAnchor;
 
   int draggingVertexIndex = -1;
   bool isCreating = false;
@@ -276,6 +277,7 @@ int main() {
                 draggingScaleHandle = hoveringScaleHandle;
                 scaleStartMouse = mousePos;
                 scaleStartValue = selFig->scale;
+                scaleStartAnchor = selFig->anchor;
               } else if (hitRotationMarker && selFig) {
                 isRotating = true;
                 rotationStartAngle = std::atan2(mousePos.y - selFig->anchor.y,
@@ -394,27 +396,35 @@ int main() {
             bool shift = sf::Keyboard::isKeyPressed(sf::Keyboard::LShift) ||
                          sf::Keyboard::isKeyPressed(sf::Keyboard::RShift);
 
+            float curAbsWidth = localBounds.width * std::abs(scaleStartValue.x);
+            float curAbsHeight =
+                localBounds.height * std::abs(scaleStartValue.y);
+            if (curAbsWidth < 0.001f)
+              curAbsWidth = 0.001f;
+            if (curAbsHeight < 0.001f)
+              curAbsHeight = 0.001f;
+
             float scaleX_mult = 1.0f;
             float scaleY_mult = 1.0f;
 
             if (draggingScaleHandle == ScaleHandle::TR ||
                 draggingScaleHandle == ScaleHandle::CR ||
                 draggingScaleHandle == ScaleHandle::BR) {
-              scaleX_mult = (localBounds.width + dx) / localBounds.width;
+              scaleX_mult = (curAbsWidth + dx) / curAbsWidth;
             } else if (draggingScaleHandle == ScaleHandle::TL ||
                        draggingScaleHandle == ScaleHandle::CL ||
                        draggingScaleHandle == ScaleHandle::BL) {
-              scaleX_mult = (localBounds.width - dx) / localBounds.width;
+              scaleX_mult = (curAbsWidth - dx) / curAbsWidth;
             }
 
             if (draggingScaleHandle == ScaleHandle::TR ||
                 draggingScaleHandle == ScaleHandle::TC ||
                 draggingScaleHandle == ScaleHandle::TL) {
-              scaleY_mult = (localBounds.height - dy) / localBounds.height;
+              scaleY_mult = (curAbsHeight - dy) / curAbsHeight;
             } else if (draggingScaleHandle == ScaleHandle::BR ||
                        draggingScaleHandle == ScaleHandle::BC ||
                        draggingScaleHandle == ScaleHandle::BL) {
-              scaleY_mult = (localBounds.height + dy) / localBounds.height;
+              scaleY_mult = (curAbsHeight + dy) / curAbsHeight;
             }
 
             bool isCorner = (draggingScaleHandle == ScaleHandle::TL ||
@@ -439,6 +449,42 @@ int main() {
               newScale.y = 0.01f * (newScale.y < 0 ? -1 : 1);
 
             selFig->scale = newScale;
+
+            // Adjust anchor to keep the opposite boundary invariant
+            sf::Vector2f v_inv(0.f, 0.f);
+            if (draggingScaleHandle == ScaleHandle::TL ||
+                draggingScaleHandle == ScaleHandle::CL ||
+                draggingScaleHandle == ScaleHandle::BL) {
+              v_inv.x = localBounds.left + localBounds.width;
+            } else if (draggingScaleHandle == ScaleHandle::TR ||
+                       draggingScaleHandle == ScaleHandle::CR ||
+                       draggingScaleHandle == ScaleHandle::BR) {
+              v_inv.x = localBounds.left;
+            }
+
+            if (draggingScaleHandle == ScaleHandle::TL ||
+                draggingScaleHandle == ScaleHandle::TC ||
+                draggingScaleHandle == ScaleHandle::TR) {
+              v_inv.y = localBounds.top + localBounds.height;
+            } else if (draggingScaleHandle == ScaleHandle::BL ||
+                       draggingScaleHandle == ScaleHandle::BC ||
+                       draggingScaleHandle == ScaleHandle::BR) {
+              v_inv.y = localBounds.top;
+            }
+
+            sf::Vector2f V_old(v_inv.x * scaleStartValue.x,
+                               v_inv.y * scaleStartValue.y);
+            sf::Vector2f V_new(v_inv.x * newScale.x, v_inv.y * newScale.y);
+            sf::Vector2f delta_V = V_old - V_new;
+
+            float rad2 = selFig->rotationAngle * M_PI / 180.f;
+            float anchor_dx =
+                delta_V.x * std::cos(rad2) - delta_V.y * std::sin(rad2);
+            float anchor_dy =
+                delta_V.x * std::sin(rad2) + delta_V.y * std::cos(rad2);
+
+            selFig->anchor =
+                scaleStartAnchor + sf::Vector2f(anchor_dx, anchor_dy);
           } else if (isRotating && scene.getSelectedFigure()) {
             float currentAngle =
                 std::atan2(mousePos.y - scene.getSelectedFigure()->anchor.y,
@@ -466,7 +512,9 @@ int main() {
             float ry =
                 deltaAbs.x * std::sin(invRad) + deltaAbs.y * std::cos(invRad);
 
-            verts[draggingVertexIndex] = sf::Vector2f(rx, ry);
+            float scaledX = rx / scene.getSelectedFigure()->scale.x;
+            float scaledY = ry / scene.getSelectedFigure()->scale.y;
+            verts[draggingVertexIndex] = sf::Vector2f(scaledX, scaledY);
           } else if (isDraggingAnchor && scene.getSelectedFigure()) {
             sf::Vector2f mousePos = viewport.screenToWorld(
                 sf::Vector2f(event.mouseMove.x, event.mouseMove.y));
