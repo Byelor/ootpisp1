@@ -28,7 +28,7 @@ Figure *Scene::hitTest(sf::Vector2f point) const {
   return nullptr;
 }
 
-void Scene::drawAll(sf::RenderTarget &target) const {
+void Scene::drawAll(sf::RenderTarget &target, float markerScale) const {
   for (const auto &fig : m_figures) {
     fig->draw(target);
   }
@@ -40,15 +40,15 @@ void Scene::drawAll(sf::RenderTarget &target) const {
     bbox.setPosition(bounds.left, bounds.top);
     bbox.setFillColor(sf::Color::Transparent);
     bbox.setOutlineColor(sf::Color(0, 120, 215)); // Windows Blue
-    bbox.setOutlineThickness(1.f);
+    bbox.setOutlineThickness(1.f * markerScale);
     target.draw(bbox);
 
     // Draw corner markers
-    const float markerSize = 6.f;
+    const float markerSize = 6.f * markerScale;
     sf::RectangleShape marker(sf::Vector2f(markerSize, markerSize));
     marker.setFillColor(sf::Color::White);
     marker.setOutlineColor(sf::Color(0, 120, 215));
-    marker.setOutlineThickness(1.f);
+    marker.setOutlineThickness(1.f * markerScale);
     marker.setOrigin(markerSize / 2.f, markerSize / 2.f);
 
     // Top-Left

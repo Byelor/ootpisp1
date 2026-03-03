@@ -17,7 +17,7 @@ public:
   Figure *hitTest(sf::Vector2f point) const;
 
   // Draw all figures
-  void drawAll(sf::RenderTarget &target) const;
+  void drawAll(sf::RenderTarget &target, float markerScale = 1.0f) const;
 
   const std::vector<std::unique_ptr<Figure>> &getFigures() const {
     return m_figures;

@@ -15,21 +15,18 @@ void drawAnchorMarker(sf::RenderTarget &target, sf::Vector2f pos,
                       float markerScale) {
   float r = 5.f * markerScale;
   sf::CircleShape circle(r);
-  circle.setFillColor(sf::Color::Transparent);
-  circle.setOutlineColor(sf::Color::White);
+  circle.setFillColor(sf::Color::White); // Solid white inside for contrast
+  circle.setOutlineColor(sf::Color(0, 120, 215)); // Blue outline
   circle.setOutlineThickness(1.5f * markerScale);
   circle.setOrigin(r, r);
   circle.setPosition(pos);
 
   sf::VertexArray lines(sf::Lines, 4);
-  lines[0] =
-      sf::Vertex(pos - sf::Vector2f(8.f * markerScale, 0.f), sf::Color::White);
-  lines[1] =
-      sf::Vertex(pos + sf::Vector2f(8.f * markerScale, 0.f), sf::Color::White);
-  lines[2] =
-      sf::Vertex(pos - sf::Vector2f(0.f, 8.f * markerScale), sf::Color::White);
-  lines[3] =
-      sf::Vertex(pos + sf::Vector2f(0.f, 8.f * markerScale), sf::Color::White);
+  sf::Color lineColor(0, 120, 215);
+  lines[0] = sf::Vertex(pos - sf::Vector2f(8.f * markerScale, 0.f), lineColor);
+  lines[1] = sf::Vertex(pos + sf::Vector2f(8.f * markerScale, 0.f), lineColor);
+  lines[2] = sf::Vertex(pos - sf::Vector2f(0.f, 8.f * markerScale), lineColor);
+  lines[3] = sf::Vertex(pos + sf::Vector2f(0.f, 8.f * markerScale), lineColor);
 
   target.draw(circle);
   target.draw(lines);
@@ -43,30 +40,6 @@ int main() {
     std::cerr << "Failed to initialize ImGui-SFML" << std::endl;
     return -1;
   }
-
-  // Load custom font (with Cyrillic support just in case, but UI remains
-  // English)
-  ImGuiIO &io = ImGui::GetIO();
-  ImFontConfig fontConfig;
-  fontConfig.OversampleH = 2;
-  fontConfig.OversampleV = 2;
-  fontConfig.RasterizerMultiply = 1.2f; // make it slightly bolder/readable
-
-  ImWchar ranges[] = {
-      0x0020, 0x00FF, // Basic Latin + Latin Supplement
-      0x0400, 0x052F, // Cyrillic + Cyrillic Supplement
-      0,
-  };
-
-  ImFont *font = io.Fonts->AddFontFromFileTTF("assets/fonts/Roboto-Regular.ttf",
-                                              16.0f, &fontConfig, ranges);
-  if (!font) {
-    std::cerr
-        << "Warning: Could not load Roboto-Regular.ttf, using default font."
-        << std::endl;
-    io.Fonts->Build();
-  }
-  ImGui::SFML::UpdateFontTexture();
 
   sf::Clock deltaClock;
 
@@ -225,6 +198,25 @@ int main() {
           if (scene.getSelectedFigure()) {
             scene.removeFigure(scene.getSelectedFigure());
             scene.setSelectedFigure(nullptr);
+          }
+        } else if (event.key.code == sf::Keyboard::Up ||
+                   event.key.code == sf::Keyboard::Down ||
+                   event.key.code == sf::Keyboard::Left ||
+                   event.key.code == sf::Keyboard::Right) {
+          if (core::Figure *fig = scene.getSelectedFigure()) {
+            float moveAmt =
+                sf::Keyboard::isKeyPressed(sf::Keyboard::LShift) ||
+                        sf::Keyboard::isKeyPressed(sf::Keyboard::RShift)
+                    ? 10.f
+                    : 1.f;
+            if (event.key.code == sf::Keyboard::Up)
+              fig->move(sf::Vector2f(0.f, -moveAmt));
+            else if (event.key.code == sf::Keyboard::Down)
+              fig->move(sf::Vector2f(0.f, moveAmt));
+            else if (event.key.code == sf::Keyboard::Left)
+              fig->move(sf::Vector2f(-moveAmt, 0.f));
+            else if (event.key.code == sf::Keyboard::Right)
+              fig->move(sf::Vector2f(moveAmt, 0.f));
           }
         }
       }
@@ -862,7 +854,7 @@ int main() {
       window.draw(cross);
     }
 
-    scene.drawAll(window);
+    scene.drawAll(window, 1.f / viewport.zoom);
 
     // Draw Anchor Marker if figure is selected
     if (scene.getSelectedFigure()) {
