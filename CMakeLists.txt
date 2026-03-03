@@ -51,6 +51,12 @@ add_executable(GraphEditor
 
 target_include_directories(GraphEditor PRIVATE src)
 
+# Add optimization for Linux (Ubuntu)
+if(UNIX AND NOT APPLE)
+    # Enable O3 optimization and native architecture tuning for best performance on Linux
+    target_compile_options(GraphEditor PRIVATE -O3 -march=native)
+endif()
+
 # Link
 target_link_libraries(GraphEditor PRIVATE
     sfml-graphics

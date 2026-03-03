@@ -908,6 +908,7 @@ int main() {
     }
 
     window.setView(oldView);
+    window.resetGLStates();
     ImGui::SFML::Render(window);
     window.display();
   }
