@@ -91,6 +91,30 @@ sf::FloatRect Figure::getLocalBoundingBox() const {
 
 void Figure::move(sf::Vector2f delta) { anchor += delta; }
 
+void Figure::resetAnchor() {
+  sf::FloatRect bounds = getLocalBoundingBox();
+  sf::Vector2f localCenter(bounds.left + bounds.width / 2.0f,
+                           bounds.top + bounds.height / 2.0f);
+
+  if (std::abs(localCenter.x) < 0.001f && std::abs(localCenter.y) < 0.001f) {
+    return;
+  }
+
+  // Calculate the absolute distance the anchor will move
+  float sx = localCenter.x * scale.x;
+  float sy = localCenter.y * scale.y;
+  float rad = rotationAngle * M_PI / 180.f;
+  float rx = sx * std::cos(rad) - sy * std::sin(rad);
+  float ry = sx * std::sin(rad) + sy * std::cos(rad);
+
+  anchor += sf::Vector2f(rx, ry);
+
+  // Shift vertices inversely
+  for (auto &v : m_vertices) {
+    v -= localCenter;
+  }
+}
+
 bool Figure::contains(sf::Vector2f point) const {
   const auto &vertices = getVertices();
   bool c = false;

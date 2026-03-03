@@ -57,6 +57,10 @@ public:
   // Move the figure relative to its current anchor
   void move(sf::Vector2f delta);
 
+  // Reset the anchor to the center of the local bounding box without moving the
+  // figure
+  void resetAnchor();
+
   // Return true if all edges should be styled identically in the UI
   virtual bool hasUniformEdge() const { return false; }
 

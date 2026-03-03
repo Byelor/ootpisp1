@@ -95,6 +95,9 @@ bool PropertiesPanel::render(core::Scene &scene, core::Viewport &viewport) {
     selectedFigure->anchor.x = anchor[0];
     selectedFigure->anchor.y = anchor[1];
   }
+  if (ImGui::Button("Reset Anchor")) {
+    selectedFigure->resetAnchor();
+  }
   ImGui::Spacing();
 
   // 2. Vertices (Global offset)
