@@ -257,9 +257,9 @@ _deps/sfml-build/src/SFML/Window/clean: _deps/sfml-build/src/SFML/Window/CMakeFi
 # Target rules for target CMakeFiles/GraphEditor.dir
 
 # All Build rule for target.
+CMakeFiles/GraphEditor.dir/all: _deps/sfml-build/src/SFML/Graphics/CMakeFiles/sfml-graphics.dir/all
 CMakeFiles/GraphEditor.dir/all: _deps/sfml-build/src/SFML/System/CMakeFiles/sfml-system.dir/all
 CMakeFiles/GraphEditor.dir/all: _deps/sfml-build/src/SFML/Window/CMakeFiles/sfml-window.dir/all
-CMakeFiles/GraphEditor.dir/all: _deps/sfml-build/src/SFML/Graphics/CMakeFiles/sfml-graphics.dir/all
 CMakeFiles/GraphEditor.dir/all: _deps/imgui-sfml-build/CMakeFiles/ImGui-SFML.dir/all
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/GraphEditor.dir/build.make CMakeFiles/GraphEditor.dir/depend
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/GraphEditor.dir/build.make CMakeFiles/GraphEditor.dir/build
@@ -453,9 +453,9 @@ _deps/sfml-build/src/SFML/Audio/CMakeFiles/sfml-audio.dir/clean:
 # Target rules for target _deps/imgui-sfml-build/CMakeFiles/ImGui-SFML.dir
 
 # All Build rule for target.
+_deps/imgui-sfml-build/CMakeFiles/ImGui-SFML.dir/all: _deps/sfml-build/src/SFML/Graphics/CMakeFiles/sfml-graphics.dir/all
 _deps/imgui-sfml-build/CMakeFiles/ImGui-SFML.dir/all: _deps/sfml-build/src/SFML/System/CMakeFiles/sfml-system.dir/all
 _deps/imgui-sfml-build/CMakeFiles/ImGui-SFML.dir/all: _deps/sfml-build/src/SFML/Window/CMakeFiles/sfml-window.dir/all
-_deps/imgui-sfml-build/CMakeFiles/ImGui-SFML.dir/all: _deps/sfml-build/src/SFML/Graphics/CMakeFiles/sfml-graphics.dir/all
 	$(MAKE) $(MAKESILENT) -f _deps/imgui-sfml-build/CMakeFiles/ImGui-SFML.dir/build.make _deps/imgui-sfml-build/CMakeFiles/ImGui-SFML.dir/depend
 	$(MAKE) $(MAKESILENT) -f _deps/imgui-sfml-build/CMakeFiles/ImGui-SFML.dir/build.make _deps/imgui-sfml-build/CMakeFiles/ImGui-SFML.dir/build
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/Users/andreika/Desktop/norm/build/CMakeFiles --progress-num=6,7,8,9,10 "Built target ImGui-SFML"

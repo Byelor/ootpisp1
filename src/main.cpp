@@ -44,6 +44,29 @@ int main() {
     return -1;
   }
 
+  // Load custom font for Russian support
+  ImGuiIO &io = ImGui::GetIO();
+  ImFontConfig fontConfig;
+  fontConfig.OversampleH = 2;
+  fontConfig.OversampleV = 2;
+  fontConfig.RasterizerMultiply = 1.2f; // make it slightly bolder/readable
+
+  ImWchar ranges[] = {
+      0x0020, 0x00FF, // Basic Latin + Latin Supplement
+      0x0400, 0x052F, // Cyrillic + Cyrillic Supplement
+      0,
+  };
+
+  ImFont *font = io.Fonts->AddFontFromFileTTF("assets/fonts/Roboto-Regular.ttf",
+                                              16.0f, &fontConfig, ranges);
+  if (!font) {
+    std::cerr
+        << "Warning: Could not load Roboto-Regular.ttf, using default font."
+        << std::endl;
+    io.Fonts->Build();
+  }
+  ImGui::SFML::UpdateFontTexture();
+
   sf::Clock deltaClock;
 
   core::Scene scene;
@@ -616,9 +639,11 @@ int main() {
       sf::Vector2f cl = (tl + bl) / 2.f;
       sf::Vector2f cr = (tr + br) / 2.f;
       std::vector<sf::Vector2f> handles = {tl, tc, tr, cr, br, bc, bl, cl};
+      float markerScale = 1.f / viewport.zoom;
       for (int i = 0; i < 8; ++i) {
         sf::Vector2f absH = selFig->getAbsoluteVertex(handles[i]);
-        if (std::hypot(mousePos.x - absH.x, mousePos.y - absH.y) <= 8.f) {
+        if (std::hypot(mousePos.x - absH.x, mousePos.y - absH.y) <=
+            8.f * markerScale) {
           newHoverHandle = static_cast<ScaleHandle>(i + 1);
           break;
         }
@@ -849,28 +874,30 @@ int main() {
 
       if (!isNodeEditMode) {
         for (const auto &h : handles) {
-          sf::RectangleShape handle(sf::Vector2f(8.f, 8.f));
-          handle.setOrigin(4.f, 4.f);
+          sf::RectangleShape handle(
+              sf::Vector2f(8.f * markerScale, 8.f * markerScale));
+          handle.setOrigin(4.f * markerScale, 4.f * markerScale);
           handle.setPosition(scene.getSelectedFigure()->getAbsoluteVertex(h));
           handle.setRotation(scene.getSelectedFigure()->rotationAngle);
           handle.setFillColor(sf::Color::White);
           handle.setOutlineColor(sf::Color(0, 120, 215));
-          handle.setOutlineThickness(1.5f);
+          handle.setOutlineThickness(1.5f * markerScale);
           window.draw(handle);
         }
       }
 
       sf::Vector2f absTc = scene.getSelectedFigure()->getAbsoluteVertex(tc);
       float rotRad = scene.getSelectedFigure()->rotationAngle * M_PI / 180.f;
-      sf::Vector2f rotOffset(std::sin(rotRad) * 20.f, -std::cos(rotRad) * 20.f);
+      sf::Vector2f rotOffset(std::sin(rotRad) * 20.f * markerScale,
+                             -std::cos(rotRad) * 20.f * markerScale);
       sf::Vector2f rotPos = absTc + rotOffset;
 
-      sf::CircleShape rotMarker(5.f);
-      rotMarker.setOrigin(5.f, 5.f);
+      sf::CircleShape rotMarker(5.f * markerScale);
+      rotMarker.setOrigin(5.f * markerScale, 5.f * markerScale);
       rotMarker.setPosition(rotPos);
       rotMarker.setFillColor(sf::Color::White);
       rotMarker.setOutlineColor(sf::Color(0, 120, 215));
-      rotMarker.setOutlineThickness(1.5f);
+      rotMarker.setOutlineThickness(1.5f * markerScale);
       window.draw(rotMarker);
 
       sf::VertexArray rotLine(sf::Lines, 2);
@@ -881,12 +908,13 @@ int main() {
       if (isNodeEditMode) {
         const auto &verts = scene.getSelectedFigure()->getVertices();
         for (const auto &v : verts) {
-          sf::RectangleShape handle(sf::Vector2f(8.f, 8.f));
-          handle.setOrigin(4.f, 4.f);
+          sf::RectangleShape handle(
+              sf::Vector2f(8.f * markerScale, 8.f * markerScale));
+          handle.setOrigin(4.f * markerScale, 4.f * markerScale);
           handle.setPosition(scene.getSelectedFigure()->getAbsoluteVertex(v));
           handle.setFillColor(sf::Color::White);
           handle.setOutlineColor(sf::Color(0, 120, 215));
-          handle.setOutlineThickness(1.5f);
+          handle.setOutlineThickness(1.5f * markerScale);
           window.draw(handle);
         }
       }
