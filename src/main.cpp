@@ -297,9 +297,11 @@ int main() {
               int hoveredVertex = -1;
 
               if (selFig) {
-                float dist = std::hypot(mousePos.x - selFig->anchor.x,
-                                        mousePos.y - selFig->anchor.y);
-                if (dist <= 10.f) {
+                float markerScale = 1.f / viewport.zoom;
+                sf::Vector2f absAnchor = selFig->parentOrigin + selFig->anchor;
+                float dist = std::hypot(mousePos.x - absAnchor.x,
+                                        mousePos.y - absAnchor.y);
+                if (dist <= 10.f * markerScale) {
                   hitAnchor = true;
                 }
 
@@ -309,7 +311,6 @@ int main() {
                                 localBounds.top);
                 sf::Vector2f tc = (tl + tr) / 2.f;
                 sf::Vector2f absTc = selFig->getAbsoluteVertex(tc);
-                float markerScale = 1.f / viewport.zoom;
                 float rotRad = selFig->rotationAngle * M_PI / 180.f;
                 sf::Vector2f rotOffset(std::sin(rotRad) * 20.f * markerScale,
                                        -std::cos(rotRad) * 20.f * markerScale);
@@ -616,8 +617,13 @@ int main() {
                 scene.getSelectedFigure()->anchor;
             sf::Vector2f newAbsoluteAnchor = mousePos - dragOffset;
 
-            scene.getSelectedFigure()->setAnchorKeepAbsolute(
-                newAbsoluteAnchor - scene.getSelectedFigure()->parentOrigin);
+            if (propertiesPanel.m_lockAnchor) {
+              scene.getSelectedFigure()->anchor =
+                  newAbsoluteAnchor - scene.getSelectedFigure()->parentOrigin;
+            } else {
+              scene.getSelectedFigure()->setAnchorKeepAbsolute(
+                  newAbsoluteAnchor - scene.getSelectedFigure()->parentOrigin);
+            }
           } else if (isDragging && scene.getSelectedFigure()) {
             sf::Vector2f mousePos = viewport.screenToWorld(
                 sf::Vector2f(event.mouseMove.x, event.mouseMove.y));

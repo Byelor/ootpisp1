@@ -14,9 +14,9 @@ public:
 
 private:
   bool m_lockProportions = true;
-  bool m_lockAnchor = false;
 
 public:
+  bool m_lockAnchor = false;
   bool m_drawOriginsOverFigures = true;
 };
 
