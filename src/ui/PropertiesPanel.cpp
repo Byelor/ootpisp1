@@ -241,27 +241,79 @@ bool PropertiesPanel::render(core::Scene &scene, core::Viewport &viewport) {
     }
   }
 
-  // 8. Side Lengths (live edit)
+  // 8. Side Lengths (live edit, with per-side lock)
   if (selectedFigure->hasSideLengths()) {
+    // Reset locks when figure changes
+    if (selectedFigure != m_lastFigure) {
+      m_lockedSides = {};
+      m_lastFigure = selectedFigure;
+    }
+
     ImGui::Separator();
     if (ImGui::TreeNodeEx("Side Lengths", ImGuiTreeNodeFlags_DefaultOpen)) {
       auto lengths = selectedFigure->getSideLengths();
       bool changed = false;
+
       for (size_t i = 0; i < lengths.size(); ++i) {
         ImGui::PushID(static_cast<int>(i + 500));
+
+        // Lock toggle button
+        bool &locked = m_lockedSides[i < 8 ? i : 7];
+        if (locked) {
+          ImGui::PushStyleColor(ImGuiCol_Button,
+                                ImVec4(0.9f, 0.6f, 0.1f, 0.9f));
+          ImGui::PushStyleColor(ImGuiCol_ButtonHovered,
+                                ImVec4(0.9f, 0.6f, 0.1f, 1.f));
+        } else {
+          ImGui::PushStyleColor(ImGuiCol_Button,
+                                ImVec4(0.25f, 0.25f, 0.25f, 0.8f));
+          ImGui::PushStyleColor(ImGuiCol_ButtonHovered,
+                                ImVec4(0.35f, 0.35f, 0.35f, 1.f));
+        }
+        if (ImGui::Button(locked ? "L##lk" : " ##lk", ImVec2(22, 0))) {
+          locked = !locked;
+        }
+        ImGui::PopStyleColor(2);
+        if (ImGui::IsItemHovered())
+          ImGui::SetTooltip(locked ? "Locked (won't change)" : "Unlocked");
+
+        ImGui::SameLine();
+
+        // Slider
         char label[32];
         snprintf(label, sizeof(label), "Side %zu", i + 1);
         float l = lengths[i];
-        ImGui::SetNextItemWidth(-1.f);
-        if (ImGui::DragFloat(label, &l, 0.5f, 1.f, 5000.f, "%.1f")) {
-          lengths[i] = l;
-          changed = true;
+        if (locked) {
+          ImGui::PushStyleColor(ImGuiCol_FrameBg,
+                                ImVec4(0.18f, 0.18f, 0.18f, 0.5f));
+          ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.5f, 0.5f, 0.5f, 1.f));
+          ImGui::SetNextItemWidth(-1.f);
+          ImGui::DragFloat(label, &l, 0.5f, 1.f, 5000.f, "%.1f",
+                           ImGuiSliderFlags_NoInput);
+          ImGui::PopStyleColor(2);
+        } else {
+          ImGui::SetNextItemWidth(-1.f);
+          if (ImGui::DragFloat(label, &l, 0.5f, 1.f, 5000.f, "%.1f")) {
+            lengths[i] = l;
+            changed = true;
+          }
         }
+
         ImGui::PopID();
       }
+
       if (changed) {
+        // Restore locked sides to their current values before applying
+        auto currentLengths = selectedFigure->getSideLengths();
+        for (size_t i = 0; i < lengths.size() && i < currentLengths.size();
+             ++i) {
+          if (i < 8 && m_lockedSides[i]) {
+            lengths[i] = currentLengths[i];
+          }
+        }
         selectedFigure->setSideLengths(lengths);
       }
+
       ImGui::TreePop();
     }
     ImGui::Spacing();

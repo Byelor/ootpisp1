@@ -4131,8 +4131,6 @@ CMakeFiles/GraphEditor.dir/src/ui/CreateFigureModal.cpp.o: /Users/andreika/Deskt
   /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/c++/v1/initializer_list \
   /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/c++/v1/ios \
   /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/c++/v1/iosfwd \
-  /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/c++/v1/iostream \
-  /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/c++/v1/istream \
   /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/c++/v1/iterator \
   /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/c++/v1/limits \
   /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/c++/v1/locale \
@@ -5287,6 +5285,7 @@ CMakeFiles/GraphEditor.dir/src/ui/PropertiesPanel.cpp.o: /Users/andreika/Desktop
   _deps/sfml-src/include/SFML/Window/WindowHandle.hpp \
   _deps/sfml-src/include/SFML/Window/WindowStyle.hpp \
   /Users/andreika/Desktop/norm/src/core/Figure.hpp \
+  /Users/andreika/Desktop/norm/src/core/Figures.hpp \
   /Users/andreika/Desktop/norm/src/core/Scene.hpp \
   /Users/andreika/Desktop/norm/src/core/Viewport.hpp \
   /Users/andreika/Desktop/norm/src/ui/PropertiesPanel.hpp

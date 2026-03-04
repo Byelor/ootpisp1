@@ -271,9 +271,7 @@ int main() {
             sf::Vector2f mousePosScreen(event.mouseButton.x,
                                         event.mouseButton.y);
             sf::Vector2f mousePos = viewport.screenToWorld(mousePosScreen);
-            if (!createModal.isOpen()) {
-              createModal.open(mousePos);
-            }
+            createModal.open(mousePos); // always open on right-click
           } else if (event.mouseButton.button == sf::Mouse::Left) {
             sf::Vector2f mousePosScreen(event.mouseButton.x,
                                         event.mouseButton.y);
