@@ -129,6 +129,30 @@ int main() {
     return fig;
   };
 
+  // Add initial colored figures
+  {
+    std::vector<sf::Color> colors = {
+        sf::Color(255, 100, 100), sf::Color(100, 255, 100),
+        sf::Color(100, 100, 255), sf::Color(255, 255, 100),
+        sf::Color(255, 100, 255), sf::Color(100, 255, 255)};
+    std::vector<ui::Tool> tempTools = {ui::Tool::Rectangle, ui::Tool::Triangle,
+                                       ui::Tool::Hexagon,   ui::Tool::Rhombus,
+                                       ui::Tool::Trapezoid, ui::Tool::Circle};
+
+    for (size_t i = 0; i < tempTools.size(); ++i) {
+      auto fig = createFigure(tempTools[i], 150.f, 150.f);
+      fig->fillColor = colors[i];
+      // Give edges varied colors
+      for (size_t j = 0; j < fig->edges.size(); ++j) {
+        fig->edges[j].color = colors[(i + j + 1) % colors.size()];
+        fig->edges[j].width = 4.f;
+      }
+      fig->anchor =
+          sf::Vector2f(250.f + (i % 3) * 250.f, 250.f + (i / 3) * 250.f);
+      scene.addFigure(std::move(fig));
+    }
+  }
+
   while (window.isOpen()) {
     sf::Event event;
     while (window.pollEvent(event)) {

@@ -55,7 +55,7 @@ Trapezoid::Trapezoid(float topWidth, float bottomWidth, float height)
 Circle::Circle(float radiusX, float radiusY)
     : m_radiusX(radiusX), m_radiusY(radiusY) {
   int segments = 60;
-  edges.resize(segments);
+  edges.resize(1);
   m_vertices.resize(segments);
   for (int i = 0; i < segments; ++i) {
     float angle = i * 2.f * 3.14159265f / segments;
