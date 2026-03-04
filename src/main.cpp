@@ -412,8 +412,21 @@ int main() {
               sf::Vector2f mousePos = viewport.screenToWorld(
                   sf::Vector2f(event.mouseButton.x, event.mouseButton.y));
 
-              float width = std::abs(mousePos.x - createStartPos.x);
-              float height = std::abs(mousePos.y - createStartPos.y);
+              float dx = mousePos.x - createStartPos.x;
+              float dy = mousePos.y - createStartPos.y;
+              float width = std::abs(dx);
+              float height = std::abs(dy);
+
+              // Constrain to square if Shift is held
+              if (sf::Keyboard::isKeyPressed(sf::Keyboard::LShift) ||
+                  sf::Keyboard::isKeyPressed(sf::Keyboard::RShift)) {
+                float maxDim = std::max(width, height);
+                width = maxDim;
+                height = maxDim;
+
+                mousePos.x = createStartPos.x + ((dx >= 0) ? maxDim : -maxDim);
+                mousePos.y = createStartPos.y + ((dy >= 0) ? maxDim : -maxDim);
+              }
 
               // Default size if very small
               if (width < 5 && height < 5) {
@@ -950,11 +963,27 @@ int main() {
     if (isCreating && creatingStep == 1 && currentTool != ui::Tool::Select) {
       sf::Vector2f mousePos = viewport.screenToWorld(sf::Vector2f(
           sf::Mouse::getPosition(window).x, sf::Mouse::getPosition(window).y));
+
+      float dx = mousePos.x - createStartPos.x;
+      float dy = mousePos.y - createStartPos.y;
+      float width = std::abs(dx);
+      float height = std::abs(dy);
+
+      // Constrain preview to square if Shift is held
+      if (sf::Keyboard::isKeyPressed(sf::Keyboard::LShift) ||
+          sf::Keyboard::isKeyPressed(sf::Keyboard::RShift)) {
+        float maxDim = std::max(width, height);
+        width = maxDim;
+        height = maxDim;
+
+        mousePos.x = createStartPos.x + ((dx >= 0) ? maxDim : -maxDim);
+        mousePos.y = createStartPos.y + ((dy >= 0) ? maxDim : -maxDim);
+      }
+
       sf::RectangleShape preview;
       preview.setPosition(std::min(createStartPos.x, mousePos.x),
                           std::min(createStartPos.y, mousePos.y));
-      preview.setSize(sf::Vector2f(std::abs(mousePos.x - createStartPos.x),
-                                   std::abs(mousePos.y - createStartPos.y)));
+      preview.setSize(sf::Vector2f(width, height));
       preview.setFillColor(sf::Color(150, 150, 150, 100)); // Semi-transparent
       preview.setOutlineColor(sf::Color(100, 100, 100, 200));
       preview.setOutlineThickness(1.f);
