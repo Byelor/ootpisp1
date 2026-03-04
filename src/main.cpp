@@ -325,8 +325,8 @@ int main() {
                   const auto &verts = selFig->getVertices();
                   for (size_t i = 0; i < verts.size(); ++i) {
                     sf::Vector2f absV = selFig->getAbsoluteVertex(verts[i]);
-                    if (std::abs(mousePos.x - absV.x) <= 6.f &&
-                        std::abs(mousePos.y - absV.y) <= 6.f) {
+                    if (std::abs(mousePos.x - absV.x) <= 6.f * markerScale &&
+                        std::abs(mousePos.y - absV.y) <= 6.f * markerScale) {
                       hoveredVertex = i;
                       break;
                     }
