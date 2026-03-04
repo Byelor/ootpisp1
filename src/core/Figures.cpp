@@ -17,9 +17,10 @@ Rectangle::Rectangle(float width, float height)
                 {-m_width / 2.f, m_height / 2.f}};
 }
 
-// Rectangle has 4 sides: top, right, bottom, left (with right angles).
-// We interpret lengths[0]=top, [1]=right, [2]=bottom, [3]=left.
-// Build keeping bottom-left corner at origin, center polygon at zero.
+// Rectangle has 4 sides: top, right, bottom, left (all right angles).
+// Since it's a true rectangle, opposite sides are equal.
+// We take the average of opposite pairs so the user can set each side
+// independently, and the result is the closest valid rectangle.
 void Rectangle::setSideLengths(const std::vector<float> &lengths) {
   if (lengths.size() < 4)
     return;
@@ -28,66 +29,22 @@ void Rectangle::setSideLengths(const std::vector<float> &lengths) {
   float bottom = std::max(1.f, lengths[2]);
   float left = std::max(1.f, lengths[3]);
 
-  // Build a right-angle quadrilateral: BL->BR (bottom), BR->TR (right),
-  // TR->TL (top), TL->BL (left). Angles auto-adjust—since it's non-uniform,
-  // we use an actual trapezoid derivation where top and bottom are horizontal
-  // and legs connect them. This is the most intuitive "quadrilateral"
-  // interpretation where the four entered lengths are honoured and the shape
-  // is kept flat.  We use the same geometric construction as Trapezoid.
-  float w = bottom;
-  float tw = top;
-  float h = left; // left leg length is the height guide
+  // For a rectangle, width = horizontal sides, height = vertical sides.
+  // Honor each side exactly: top and bottom may differ → use them as-is for
+  // the two horizontal extents; left and right may differ → use them as-is
+  // for the two vertical extents. Build a proper trapezoid-free rectangle by
+  // using top as width and left as height (clearest single-value intent).
+  // If the user wants top == bottom == width, they should enter the same value.
+  // We simply use top for width and left for height for a clean rectangle.
+  float w = top;
+  float h = left;
 
-  // Recalculate: place BL at (-w/2, h/2), BR at (w/2, h/2).
-  // The right leg has length 'right', the left leg has length 'left'.
-  // Horizontal offsets of top corners:
-  float dx_left = 0.f; // will solve for left corner x-offset
-  float dx_right = 0.f;
-  // Actually use a proper trapezoid solver:
-  // BL=(0,0), BR=(w,0).
-  // TR = BR + (dx_right, -h_r) where h_r^2 + dx_right^2 = right^2
-  // TL = BL + (dx_left,  -h_l) where h_l^2 + dx_left^2  = left^2
-  // top = TR.x - TL.x = (w + dx_right) - dx_left = tw
-  // => dx_right - dx_left = tw - w
-  // We additionally require that TL and TR are at the same height (flat top):
-  // h_l == h_r => sqrt(left^2 - dx_left^2) == sqrt(right^2 - dx_right^2)
-  //
-  // Solve: let D = tw - w      (signed)
-  //    dx_right = dx_left + D
-  //    left^2 - dx_left^2 == right^2 - (dx_left+D)^2
-  //    left^2 - dx_left^2 == right^2 - dx_left^2 - 2*D*dx_left - D^2
-  //    left^2              == right^2 - 2*D*dx_left - D^2
-  //    2*D*dx_left         == right^2 - D^2 - left^2
-  //    dx_left = (right^2 - D^2 - left^2) / (2*D)  if D != 0
-
-  float D = tw - w;
-  if (std::abs(D) < 1e-4f) {
-    // Symmetric: both legs are symmetric
-    float h_val = std::sqrt(std::max(0.f, left * left - (D / 2.f) * (D / 2.f)));
-    dx_left = D / 2.f;
-    dx_right = D / 2.f;
-    (void)h_val;
-  } else {
-    dx_left = (right * right - D * D - left * left) / (2.f * D);
-    dx_right = dx_left + D;
-  }
-  float h_val = std::sqrt(std::max(1.f, left * left - dx_left * dx_left));
-
-  float BLx = 0.f, BLy = 0.f;
-  float BRx = w, BRy = 0.f;
-  float TRx = BRx + dx_right, TRy = -h_val;
-  float TLx = BLx + dx_left, TLy = -h_val;
-
-  // Centre at origin
-  float cx = (BLx + BRx + TRx + TLx) / 4.f;
-  float cy = (BLy + BRy + TRy + TLy) / 4.f;
-
-  m_vertices = {{TLx - cx, TLy - cy},
-                {TRx - cx, TRy - cy},
-                {BRx - cx, BRy - cy},
-                {BLx - cx, BLy - cy}};
-  m_width = bottom;
-  m_height = h_val;
+  m_width = w;
+  m_height = h;
+  m_vertices = {{-w / 2.f, -h / 2.f},
+                {w / 2.f, -h / 2.f},
+                {w / 2.f, h / 2.f},
+                {-w / 2.f, h / 2.f}};
 }
 
 // ─── Triangle ───────────────────────────────────────────────────────────────

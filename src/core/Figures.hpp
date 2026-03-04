@@ -10,6 +10,10 @@ public:
 
   bool hasSideLengths() const override { return true; }
   void setSideLengths(const std::vector<float> &lengths) override;
+  const char *getSideName(int idx) const override {
+    static const char *n[] = {"Top", "Right", "Bottom", "Left"};
+    return (idx >= 0 && idx < 4) ? n[idx] : "Side";
+  }
 
 private:
   float m_width;
@@ -22,6 +26,10 @@ public:
 
   bool hasSideLengths() const override { return true; }
   void setSideLengths(const std::vector<float> &lengths) override;
+  const char *getSideName(int idx) const override {
+    static const char *n[] = {"Bottom", "Right side", "Left side"};
+    return (idx >= 0 && idx < 3) ? n[idx] : "Side";
+  }
 
 private:
   float m_base;
@@ -34,6 +42,11 @@ public:
 
   bool hasSideLengths() const override { return true; }
   void setSideLengths(const std::vector<float> &lengths) override;
+  const char *getSideName(int idx) const override {
+    static const char *n[] = {"Side 1", "Side 2", "Side 3",
+                              "Side 4", "Side 5", "Side 6"};
+    return (idx >= 0 && idx < 6) ? n[idx] : "Side";
+  }
 
 private:
   float m_width;
@@ -46,6 +59,10 @@ public:
 
   bool hasSideLengths() const override { return true; }
   void setSideLengths(const std::vector<float> &lengths) override;
+  const char *getSideName(int idx) const override {
+    static const char *n[] = {"Top-R", "Bottom-R", "Bottom-L", "Top-L"};
+    return (idx >= 0 && idx < 4) ? n[idx] : "Side";
+  }
 
 private:
   float m_width;
@@ -58,6 +75,10 @@ public:
 
   bool hasSideLengths() const override { return true; }
   void setSideLengths(const std::vector<float> &lengths) override;
+  const char *getSideName(int idx) const override {
+    static const char *n[] = {"Top", "Right leg", "Bottom", "Left leg"};
+    return (idx >= 0 && idx < 4) ? n[idx] : "Side";
+  }
 
 private:
   float m_topWidth;

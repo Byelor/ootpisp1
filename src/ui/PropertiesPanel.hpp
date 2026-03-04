@@ -2,7 +2,6 @@
 
 #include "../core/Scene.hpp"
 #include "../core/Viewport.hpp"
-#include <array>
 #include <imgui.h>
 
 namespace ui {
@@ -15,9 +14,6 @@ public:
 
 private:
   bool m_lockProportions = true;
-  // Per-side lock state (max 8 sides, reset when figure changes)
-  std::array<bool, 8> m_lockedSides = {};
-  core::Figure *m_lastFigure = nullptr;
 
 public:
   bool m_lockAnchor = false;

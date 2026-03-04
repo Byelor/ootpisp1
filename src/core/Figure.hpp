@@ -75,6 +75,9 @@ public:
   // Return true if this figure supports per-side length editing
   virtual bool hasSideLengths() const { return false; }
 
+  // Return the display name of side i (e.g. "Top", "Right leg")
+  virtual const char *getSideName(int /*idx*/) const { return "Side"; }
+
   // Return the current side lengths (distance between consecutive vertices)
   virtual std::vector<float> getSideLengths() const;
 

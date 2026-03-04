@@ -12,8 +12,11 @@ std::vector<float> Figure::getSideLengths() const {
   for (int i = 0; i < n; ++i) {
     const auto &a = verts[i];
     const auto &b = verts[(i + 1) % n];
-    float dx = b.x - a.x;
-    float dy = b.y - a.y;
+    // Use scaled positions so the reported length matches displayed size
+    float ax = a.x * scale.x, ay = a.y * scale.y;
+    float bx = b.x * scale.x, by = b.y * scale.y;
+    float dx = bx - ax;
+    float dy = by - ay;
     lengths.push_back(std::sqrt(dx * dx + dy * dy));
   }
   return lengths;
