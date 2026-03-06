@@ -1,5 +1,5 @@
 #include "PropertiesPanel.hpp"
-#include "../core/Figures.hpp"
+#include "core/Figures.hpp"
 #include <algorithm>
 #include <cstdio>
 #include <string>

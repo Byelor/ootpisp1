@@ -1,4 +1,5 @@
 #include "Scene.hpp"
+#include "utils/GeometryUtils.hpp"
 
 namespace core {
 

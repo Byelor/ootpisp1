@@ -1,7 +1,7 @@
 #pragma once
 
-#include "../core/Scene.hpp"
-#include "../core/Viewport.hpp"
+#include "core/Scene.hpp"
+#include "core/Viewport.hpp"
 #include <imgui.h>
 
 namespace ui {

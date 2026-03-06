@@ -1,10 +1,10 @@
 #include "Figures.hpp"
+#include "MathUtils.hpp"
+#include "utils/GeometryUtils.hpp"
 #include <algorithm>
 #include <cmath>
 
 namespace core {
-
-static constexpr float PI = 3.14159265358979323846f;
 
 // ─── Rectangle ──────────────────────────────────────────────────────────────
 
@@ -102,7 +102,7 @@ Hexagon::Hexagon(float width, float height) : m_width(width), m_height(height) {
   edges.resize(6);
   m_vertices.resize(6);
   for (int i = 0; i < 6; ++i) {
-    float angle = i * 60.f * PI / 180.f;
+    float angle = i * 60.f * math::PI / 180.f;
     m_vertices[i] = {(m_width / 2.f) * std::cos(angle),
                      (m_height / 2.f) * std::sin(angle)};
   }
@@ -297,7 +297,7 @@ Circle::Circle(float radiusX, float radiusY)
   edges.resize(1);
   m_vertices.resize(segments);
   for (int i = 0; i < segments; ++i) {
-    float angle = i * 2.f * PI / segments;
+    float angle = i * 2.f * math::PI / segments;
     m_vertices[i] = {m_radiusX * std::cos(angle), m_radiusY * std::sin(angle)};
   }
 }

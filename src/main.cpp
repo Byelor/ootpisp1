@@ -1,6 +1,7 @@
 #include "core/Figures.hpp"
 #include "core/Scene.hpp"
 #include "core/Viewport.hpp"
+#include "core/MathUtils.hpp"
 #include "ui/CreateFigureModal.hpp"
 #include "ui/PropertiesPanel.hpp"
 #include "ui/Toolbar.hpp"
@@ -11,6 +12,8 @@
 #include <imgui.h>
 #include <iostream>
 #include <memory>
+
+using namespace core;
 
 void drawAnchorMarker(sf::RenderTarget &target, sf::Vector2f pos,
                       float markerScale) {
@@ -342,7 +345,7 @@ int main() {
                                 localBounds.top);
                 sf::Vector2f tc = (tl + tr) / 2.f;
                 sf::Vector2f absTc = selFig->getAbsoluteVertex(tc);
-                float rotRad = selFig->rotationAngle * M_PI / 180.f;
+                float rotRad = selFig->rotationAngle * math::PI / 180.f;
                 sf::Vector2f rotOffset(std::sin(rotRad) * 20.f * markerScale,
                                        -std::cos(rotRad) * 20.f * markerScale);
                 sf::Vector2f rotMarker = absTc + rotOffset;
@@ -376,7 +379,7 @@ int main() {
                     selFig->parentOrigin + selFig->anchor;
                 rotationStartAngle = std::atan2(mousePos.y - absoluteAnchor.y,
                                                 mousePos.x - absoluteAnchor.x) *
-                                     180.f / M_PI;
+                                     180.f / math::PI;
                 initialRotation = selFig->rotationAngle;
               } else if (isNodeEditMode && hoveredVertex != -1) {
                 draggingVertexIndex = hoveredVertex;
@@ -508,7 +511,7 @@ int main() {
                      scene.getSelectedFigure()) {
             core::Figure *selFig = scene.getSelectedFigure();
             sf::Vector2f delta = mousePos - scaleStartMouse;
-            float rad = -selFig->rotationAngle * M_PI / 180.f;
+            float rad = -selFig->rotationAngle * math::PI / 180.f;
             float dx = delta.x * std::cos(rad) - delta.y * std::sin(rad);
             float dy = delta.x * std::sin(rad) + delta.y * std::cos(rad);
 
@@ -598,7 +601,7 @@ int main() {
             sf::Vector2f V_new(v_inv.x * newScale.x, v_inv.y * newScale.y);
             sf::Vector2f delta_V = V_old - V_new;
 
-            float rad2 = selFig->rotationAngle * M_PI / 180.f;
+            float rad2 = selFig->rotationAngle * math::PI / 180.f;
             float anchor_dx =
                 delta_V.x * std::cos(rad2) - delta_V.y * std::sin(rad2);
             float anchor_dy =
@@ -612,7 +615,7 @@ int main() {
                 scene.getSelectedFigure()->anchor;
             float currentAngle = std::atan2(mousePos.y - absoluteAnchor.y,
                                             mousePos.x - absoluteAnchor.x) *
-                                 180.f / M_PI;
+                                 180.f / math::PI;
             float delta = currentAngle - rotationStartAngle;
             float newRot = initialRotation + delta;
 
@@ -631,7 +634,7 @@ int main() {
                 scene.getSelectedFigure()->anchor;
             sf::Vector2f deltaAbs = mousePos - absoluteAnchor;
             float invRad =
-                -scene.getSelectedFigure()->rotationAngle * M_PI / 180.f;
+                -scene.getSelectedFigure()->rotationAngle * math::PI / 180.f;
             float rx =
                 deltaAbs.x * std::cos(invRad) - deltaAbs.y * std::sin(invRad);
             float ry =
@@ -964,7 +967,7 @@ int main() {
       }
 
       sf::Vector2f absTc = scene.getSelectedFigure()->getAbsoluteVertex(tc);
-      float rotRad = scene.getSelectedFigure()->rotationAngle * M_PI / 180.f;
+      float rotRad = scene.getSelectedFigure()->rotationAngle * math::PI / 180.f;
       sf::Vector2f rotOffset(std::sin(rotRad) * 20.f * markerScale,
                              -std::cos(rotRad) * 20.f * markerScale);
       sf::Vector2f rotPos = absTc + rotOffset;

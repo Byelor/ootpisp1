@@ -1,5 +1,5 @@
 #include "CreateFigureModal.hpp"
-#include "../core/Figures.hpp"
+#include "core/Figures.hpp"
 #include <imgui.h>
 
 namespace ui {

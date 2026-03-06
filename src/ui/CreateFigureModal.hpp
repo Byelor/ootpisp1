@@ -1,7 +1,7 @@
 #pragma once
 
-#include "../core/Figure.hpp"
-#include "../core/Scene.hpp"
+#include "core/Figure.hpp"
+#include "core/Scene.hpp"
 #include <SFML/Graphics.hpp>
 #include <memory>
 #include <vector>

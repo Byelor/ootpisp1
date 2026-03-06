@@ -1,3 +1,0 @@
-/Users/andreika/Desktop/norm/build-test/_deps/imgui-sfml-subbuild/CMakeFiles/imgui-sfml-populate.dir
-/Users/andreika/Desktop/norm/build-test/_deps/imgui-sfml-subbuild/CMakeFiles/edit_cache.dir
-/Users/andreika/Desktop/norm/build-test/_deps/imgui-sfml-subbuild/CMakeFiles/rebuild_cache.dir

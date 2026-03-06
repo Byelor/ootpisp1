@@ -4,6 +4,9 @@ project(GraphEditor CXX)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
+set(BUILD_SHARED_LIBS OFF CACHE BOOL "Build shared libraries" FORCE)
+set(SFML_STATIC_LIBRARIES ON CACHE BOOL "Build SFML as static libraries" FORCE)
+
 include(FetchContent)
 
 # Fetch SFML 2.6.2
@@ -48,6 +51,7 @@ add_executable(GraphEditor
     src/ui/Toolbar.cpp
     src/ui/PropertiesPanel.cpp
     src/ui/CreateFigureModal.cpp
+    src/utils/GeometryUtils.cpp
 )
 
 target_include_directories(GraphEditor PRIVATE src)
@@ -58,6 +62,7 @@ if(UNIX AND NOT APPLE)
     target_compile_options(GraphEditor PRIVATE -O3 -march=native)
 endif()
 
+
 # Link
 target_link_libraries(GraphEditor PRIVATE
     sfml-graphics
@@ -65,5 +70,12 @@ target_link_libraries(GraphEditor PRIVATE
     sfml-system
     ImGui-SFML::ImGui-SFML
 )
+
+if(WIN32)
+    target_link_libraries(GraphEditor PRIVATE
+        gdi32  # для графики
+        opengl32
+    )
+endif()
 
 # On Mac we may need to link some frameworks if statically linking, but FetchContent usually handles it
