@@ -1,5 +1,5 @@
 #include "CreateFigureModal.hpp"
-#include "core/Figures.hpp"
+#include "core/CompositeFigure.hpp"
 #include <imgui.h>
 
 namespace ui {
@@ -47,11 +47,11 @@ std::unique_ptr<core::Figure> CreateFigureModal::createConfiguredFigure() {
 
   switch (m_figureType) {
   case 0: { // Rectangle
-    fig = std::make_unique<core::Rectangle>(lengths[0], lengths[3]);
+    fig = core::CompositeFigure::createRectangle(lengths[0], lengths[3]);
     break;
   }
   case 1: { // Triangle — build default then adjust
-    fig = std::make_unique<core::Triangle>(lengths[0], 100.f);
+    fig = core::CompositeFigure::createTriangle(lengths[0], 100.f);
     break;
   }
   case 2: { // Hexagon
@@ -59,7 +59,7 @@ std::unique_ptr<core::Figure> CreateFigureModal::createConfiguredFigure() {
     for (auto l : lengths)
       avg += l;
     avg /= lengths.size();
-    fig = std::make_unique<core::Hexagon>(avg * 2.f, avg * 2.f);
+    fig = core::CompositeFigure::createHexagon(avg * 2.f, avg * 2.f);
     break;
   }
   case 3: { // Rhombus
@@ -67,15 +67,15 @@ std::unique_ptr<core::Figure> CreateFigureModal::createConfiguredFigure() {
     for (auto l : lengths)
       avg += l;
     avg /= lengths.size();
-    fig = std::make_unique<core::Rhombus>(avg * 2.f, avg * 2.f);
+    fig = core::CompositeFigure::createRhombus(avg * 2.f, avg * 2.f);
     break;
   }
   case 4: { // Trapezoid
-    fig = std::make_unique<core::Trapezoid>(lengths[0], lengths[2], 100.f);
+    fig = core::CompositeFigure::createTrapezoid(lengths[0], lengths[2], 100.f);
     break;
   }
   case 5: { // Circle
-    fig = std::make_unique<core::Circle>(m_radiusX, m_radiusY);
+    fig = core::CompositeFigure::createCircle(m_radiusX, m_radiusY);
     break;
   }
   }

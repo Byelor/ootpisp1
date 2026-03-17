@@ -4,35 +4,23 @@
 namespace core {
 
 void Scene::addFigure(std::unique_ptr<Figure> fig) {
-  if (fig) {
-    m_figures.push_back(std::move(fig));
-  }
+  m_figures.add(std::move(fig));
+}
+
+std::unique_ptr<Figure> Scene::extractFigure(Figure *fig) {
+  return m_figures.extract(fig);
 }
 
 bool Scene::removeFigure(Figure *fig) {
-  for (auto it = m_figures.begin(); it != m_figures.end(); ++it) {
-    if (it->get() == fig) {
-      m_figures.erase(it);
-      return true;
-    }
-  }
-  return false;
+  return m_figures.remove(fig);
 }
 
 Figure *Scene::hitTest(sf::Vector2f point) const {
-  // Iterate backwards to check top-most figures first
-  for (auto it = m_figures.rbegin(); it != m_figures.rend(); ++it) {
-    if ((*it)->contains(point)) {
-      return it->get();
-    }
-  }
-  return nullptr;
+  return m_figures.hitTest(point);
 }
 
 void Scene::drawAll(sf::RenderTarget &target, float markerScale) const {
-  for (const auto &fig : m_figures) {
-    fig->draw(target);
-  }
+  m_figures.drawAll(target, markerScale);
 
   // Draw bounding box if a figure is selected
   if (m_selectedFigure) {
@@ -68,7 +56,8 @@ void Scene::drawAll(sf::RenderTarget &target, float markerScale) const {
 }
 
 void Scene::setCustomOrigin(sf::Vector2f newOriginWorld) {
-  for (auto &figure : m_figures) {
+  for (int i = 0; i < m_figures.count(); ++i) {
+    auto figure = m_figures.get(i);
     if (!customOriginActive) {
       figure->parentOrigin = newOriginWorld;
       figure->anchor -= newOriginWorld;
@@ -85,7 +74,8 @@ void Scene::setCustomOrigin(sf::Vector2f newOriginWorld) {
 void Scene::resetCustomOrigin() {
   if (!customOriginActive)
     return;
-  for (auto &figure : m_figures) {
+  for (int i = 0; i < m_figures.count(); ++i) {
+    auto figure = m_figures.get(i);
     figure->anchor += customOriginPos;
     figure->parentOrigin = sf::Vector2f(0.f, 0.f);
   }

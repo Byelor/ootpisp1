@@ -2,7 +2,7 @@
 
 #include "Figure.hpp"
 #include <memory>
-#include <vector>
+#include "SceneArray.hpp"
 
 namespace core {
 
@@ -19,9 +19,9 @@ public:
   // Draw all figures
   void drawAll(sf::RenderTarget &target, float markerScale = 1.0f) const;
 
-  const std::vector<std::unique_ptr<Figure>> &getFigures() const {
-    return m_figures;
-  }
+  int figureCount() const { return m_figures.count(); }
+  Figure *getFigure(int idx) const { return m_figures.get(idx); }
+  std::unique_ptr<Figure> extractFigure(Figure *fig);
 
   // Selected figure
   void setSelectedFigure(Figure *fig) { m_selectedFigure = fig; }
@@ -35,7 +35,7 @@ public:
   void resetCustomOrigin();
 
 private:
-  std::vector<std::unique_ptr<Figure>> m_figures;
+  SceneArray m_figures;
   Figure *m_selectedFigure = nullptr;
 };
 

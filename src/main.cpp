@@ -1,10 +1,10 @@
-#include "core/Figures.hpp"
+#include "core/CompositeFigure.hpp"
 #include "core/Scene.hpp"
 #include "core/Viewport.hpp"
 #include "core/MathUtils.hpp"
-#include "ui/CreateFigureModal.hpp"
-#include "ui/PropertiesPanel.hpp"
 #include "ui/Toolbar.hpp"
+#include "ui/PropertiesPanel.hpp"
+#include "ui/CreateFigureModal.hpp"
 #include <SFML/Graphics.hpp>
 #include <SFML/Window.hpp>
 #include <cmath>
@@ -14,6 +14,7 @@
 #include <memory>
 
 using namespace core;
+using namespace core::math;
 
 void drawAnchorMarker(sf::RenderTarget &target, sf::Vector2f pos,
                       float markerScale) {
@@ -85,6 +86,11 @@ int main() {
   bool wasClicked = false;
   sf::Vector2f createStartPos;
 
+  int selectedCustomToolId = -1;
+  std::vector<sf::Vector2f> currentPolylineVertices;
+  std::vector<core::Figure*> compoundSelection;
+  std::vector<std::unique_ptr<core::Figure>> userRegistry;
+
   bool showGrid = false;
   bool showOriginAxes = true;
   sf::Cursor cursorArrow;
@@ -112,19 +118,27 @@ int main() {
 
     std::unique_ptr<core::Figure> fig;
     if (tool == ui::Tool::Rectangle)
-      fig = std::make_unique<core::Rectangle>(width, height);
+      fig = core::CompositeFigure::createRectangle(width, height);
     else if (tool == ui::Tool::Triangle)
-      fig = std::make_unique<core::Triangle>(width, height);
+      fig = core::CompositeFigure::createTriangle(width, height);
     else if (tool == ui::Tool::Hexagon)
-      fig = std::make_unique<core::Hexagon>(width, height);
+      fig = core::CompositeFigure::createHexagon(width, height);
     else if (tool == ui::Tool::Rhombus)
-      fig = std::make_unique<core::Rhombus>(width, height);
+      fig = core::CompositeFigure::createRhombus(width, height);
     else if (tool == ui::Tool::Trapezoid)
-      fig = std::make_unique<core::Trapezoid>(width * 0.6f, width, height);
+      fig = core::CompositeFigure::createTrapezoid(width * 0.6f, width, height);
     else if (tool == ui::Tool::Circle)
-      fig = std::make_unique<core::Circle>(width / 2.f, height / 2.f);
+      fig = core::CompositeFigure::createCircle(width / 2.f, height / 2.f);
+    else if (tool == ui::Tool::Custom && selectedCustomToolId >= 0 && selectedCustomToolId < userRegistry.size()) {
+        fig = userRegistry[selectedCustomToolId]->clone();
+        sf::FloatRect bounds = fig->getLocalBoundingBox();
+        if (bounds.width > 0 && bounds.height > 0) {
+            fig->scale.x *= width / bounds.width;
+            fig->scale.y *= height / bounds.height;
+        }
+    }
 
-    if (fig) {
+    if (fig && tool != ui::Tool::Custom) {
       fig->fillColor = sf::Color(150, 150, 150);
       for (auto &edge : fig->edges) {
         edge.width = 2.f;
@@ -271,10 +285,29 @@ int main() {
                 sf::Vector2f(event.mouseButton.x, event.mouseButton.y);
             panStartOrigin = viewport.worldOrigin;
           } else if (event.mouseButton.button == sf::Mouse::Right) {
-            sf::Vector2f mousePosScreen(event.mouseButton.x,
-                                        event.mouseButton.y);
-            sf::Vector2f mousePos = viewport.screenToWorld(mousePosScreen);
-            createModal.open(mousePos); // always open on right-click
+            if (currentTool == ui::Tool::Polyline && currentPolylineVertices.size() > 1) {
+                auto fig = std::make_unique<core::CompositeFigure>(currentPolylineVertices);
+                fig->fillColor = sf::Color(150, 150, 150);
+                fig->figureName = "Custom Polyline";
+                sf::Vector2f minP = currentPolylineVertices[0], maxP = currentPolylineVertices[0];
+                for(auto& v : currentPolylineVertices) {
+                    minP.x = std::min(minP.x, v.x); minP.y = std::min(minP.y, v.y);
+                    maxP.x = std::max(maxP.x, v.x); maxP.y = std::max(maxP.y, v.y);
+                }
+                sf::Vector2f center = (minP + maxP) / 2.f;
+                fig->anchor = center;
+                for (auto& v : fig->getVerticesMutable()) {
+                    v -= center;
+                }
+                scene.addFigure(std::move(fig));
+                currentPolylineVertices.clear();
+                currentTool = ui::Tool::Select;
+            } else {
+                sf::Vector2f mousePosScreen(event.mouseButton.x,
+                                            event.mouseButton.y);
+                sf::Vector2f mousePos = viewport.screenToWorld(mousePosScreen);
+                createModal.open(mousePos); // always open on right-click
+            }
           } else if (event.mouseButton.button == sf::Mouse::Left) {
             sf::Vector2f mousePosScreen(event.mouseButton.x,
                                         event.mouseButton.y);
@@ -345,7 +378,7 @@ int main() {
                                 localBounds.top);
                 sf::Vector2f tc = (tl + tr) / 2.f;
                 sf::Vector2f absTc = selFig->getAbsoluteVertex(tc);
-                float rotRad = selFig->rotationAngle * math::PI / 180.f;
+                float rotRad = selFig->rotationAngle * core::math::PI / 180.f;
                 sf::Vector2f rotOffset(std::sin(rotRad) * 20.f * markerScale,
                                        -std::cos(rotRad) * 20.f * markerScale);
                 sf::Vector2f rotMarker = absTc + rotOffset;
@@ -379,7 +412,7 @@ int main() {
                     selFig->parentOrigin + selFig->anchor;
                 rotationStartAngle = std::atan2(mousePos.y - absoluteAnchor.y,
                                                 mousePos.x - absoluteAnchor.x) *
-                                     180.f / math::PI;
+                                     180.f / core::math::PI;
                 initialRotation = selFig->rotationAngle;
               } else if (isNodeEditMode && hoveredVertex != -1) {
                 draggingVertexIndex = hoveredVertex;
@@ -395,13 +428,33 @@ int main() {
                   isNodeEditMode = false;
 
                 if (hit && doubleClicked) {
-                  isNodeEditMode = true;
+                  auto compHit = dynamic_cast<core::CompositeFigure*>(hit);
+                  if (compHit && compHit->children.empty()) {
+                    isNodeEditMode = true;
+                  }
                 } else if (hit) {
                   isDragging = true;
                   sf::Vector2f absoluteAnchor = hit->parentOrigin + hit->anchor;
                   dragOffset = mousePos - absoluteAnchor;
                 }
               }
+            } else if (currentTool == ui::Tool::Polyline) {
+               sf::Vector2f snapPos = mousePos;
+               if (!currentPolylineVertices.empty() && 
+                   (sf::Keyboard::isKeyPressed(sf::Keyboard::LShift) || sf::Keyboard::isKeyPressed(sf::Keyboard::RShift))) {
+                   sf::Vector2f lastPos = currentPolylineVertices.back();
+                   sf::Vector2f delta = mousePos - lastPos;
+                   if (std::abs(delta.x) > std::abs(delta.y)) snapPos = {mousePos.x, lastPos.y};
+                   else snapPos = {lastPos.x, mousePos.y};
+               }
+               currentPolylineVertices.push_back(snapPos);
+            } else if (currentTool == ui::Tool::CompoundSelect) {
+               core::Figure* hit = scene.hitTest(mousePos);
+               if (hit) {
+                   auto it = std::find(compoundSelection.begin(), compoundSelection.end(), hit);
+                   if (it != compoundSelection.end()) compoundSelection.erase(it);
+                   else compoundSelection.push_back(hit);
+               }
             } else {
               // Creating mode: two-clicks
               if (creatingStep == 0) {
@@ -489,7 +542,7 @@ int main() {
                 scene.addFigure(std::move(fig));
                 std::cout
                     << "Figure successfully added to scene. Total figures: "
-                    << scene.getFigures().size() << std::endl;
+                    << scene.figureCount() << std::endl;
               } else {
                 std::cout << "createFigure returned nullptr!" << std::endl;
               }
@@ -511,7 +564,7 @@ int main() {
                      scene.getSelectedFigure()) {
             core::Figure *selFig = scene.getSelectedFigure();
             sf::Vector2f delta = mousePos - scaleStartMouse;
-            float rad = -selFig->rotationAngle * math::PI / 180.f;
+            float rad = -selFig->rotationAngle * core::math::PI / 180.f;
             float dx = delta.x * std::cos(rad) - delta.y * std::sin(rad);
             float dy = delta.x * std::sin(rad) + delta.y * std::cos(rad);
 
@@ -601,7 +654,7 @@ int main() {
             sf::Vector2f V_new(v_inv.x * newScale.x, v_inv.y * newScale.y);
             sf::Vector2f delta_V = V_old - V_new;
 
-            float rad2 = selFig->rotationAngle * math::PI / 180.f;
+            float rad2 = selFig->rotationAngle * core::math::PI / 180.f;
             float anchor_dx =
                 delta_V.x * std::cos(rad2) - delta_V.y * std::sin(rad2);
             float anchor_dy =
@@ -615,7 +668,7 @@ int main() {
                 scene.getSelectedFigure()->anchor;
             float currentAngle = std::atan2(mousePos.y - absoluteAnchor.y,
                                             mousePos.x - absoluteAnchor.x) *
-                                 180.f / math::PI;
+                                 180.f / core::math::PI;
             float delta = currentAngle - rotationStartAngle;
             float newRot = initialRotation + delta;
 
@@ -634,7 +687,7 @@ int main() {
                 scene.getSelectedFigure()->anchor;
             sf::Vector2f deltaAbs = mousePos - absoluteAnchor;
             float invRad =
-                -scene.getSelectedFigure()->rotationAngle * math::PI / 180.f;
+                -scene.getSelectedFigure()->rotationAngle * core::math::PI / 180.f;
             float rx =
                 deltaAbs.x * std::cos(invRad) - deltaAbs.y * std::sin(invRad);
             float ry =
@@ -747,17 +800,24 @@ int main() {
     ImGui::SFML::Update(window, deltaClock.restart());
 
     // Render UI
-    toolbar.render(currentTool);
-    bool fitRequested = propertiesPanel.render(scene, viewport);
+    toolbar.render(currentTool, scene, selectedCustomToolId);
+    bool fitRequested = propertiesPanel.render(scene, viewport, compoundSelection, userRegistry, toolbar);
     createModal.render(scene);
 
-    if (fitRequested && !scene.getFigures().empty()) {
-      const auto &figs = scene.getFigures();
-      sf::FloatRect first = figs.front()->getBoundingBox();
+    if (currentTool != ui::Tool::CompoundSelect) {
+        compoundSelection.clear();
+    }
+
+    if (currentTool != ui::Tool::Polyline) {
+        currentPolylineVertices.clear();
+    }
+
+    if (fitRequested && scene.figureCount() > 0) {
+      sf::FloatRect first = scene.getFigure(0)->getBoundingBox();
       float minX = first.left, minY = first.top,
             maxX = first.left + first.width, maxY = first.top + first.height;
-      for (size_t i = 1; i < figs.size(); ++i) {
-        sf::FloatRect b = figs[i]->getBoundingBox();
+      for (int i = 1; i < scene.figureCount(); ++i) {
+        sf::FloatRect b = scene.getFigure(i)->getBoundingBox();
         minX = std::min(minX, b.left);
         minY = std::min(minY, b.top);
         maxX = std::max(maxX, b.left + b.width);
@@ -926,6 +986,37 @@ int main() {
 
     scene.drawAll(window, 1.f / viewport.zoom);
 
+    if (currentTool == ui::Tool::CompoundSelect) {
+        for (auto fig : compoundSelection) {
+            sf::FloatRect b = fig->getBoundingBox();
+            sf::RectangleShape rect({b.width, b.height});
+            rect.setPosition(b.left, b.top);
+            rect.setFillColor(sf::Color(0, 255, 0, 50));
+            rect.setOutlineColor(sf::Color::Green);
+            rect.setOutlineThickness(1.f / viewport.zoom);
+            window.draw(rect);
+        }
+    }
+    
+    if (currentTool == ui::Tool::Polyline && !currentPolylineVertices.empty()) {
+        sf::Vector2f mousePos = viewport.screenToWorld(sf::Vector2f(sf::Mouse::getPosition(window).x, sf::Mouse::getPosition(window).y));
+        sf::Vector2f snapPos = mousePos;
+        if (sf::Keyboard::isKeyPressed(sf::Keyboard::LShift) || sf::Keyboard::isKeyPressed(sf::Keyboard::RShift)) {
+            sf::Vector2f lastPos = currentPolylineVertices.back();
+            sf::Vector2f delta = mousePos - lastPos;
+            if (std::abs(delta.x) > std::abs(delta.y)) snapPos = {mousePos.x, lastPos.y};
+            else snapPos = {lastPos.x, mousePos.y};
+        }
+        
+        std::vector<sf::Vector2f> verts = currentPolylineVertices;
+        verts.push_back(snapPos);
+        sf::VertexArray lines(sf::LineStrip, verts.size());
+        for (size_t i = 0; i < verts.size(); ++i) {
+            lines[i] = sf::Vertex(verts[i], sf::Color::Black);
+        }
+        window.draw(lines);
+    }
+
     if (propertiesPanel.m_drawOriginsOverFigures) {
       drawOrigins();
     }
@@ -967,7 +1058,7 @@ int main() {
       }
 
       sf::Vector2f absTc = scene.getSelectedFigure()->getAbsoluteVertex(tc);
-      float rotRad = scene.getSelectedFigure()->rotationAngle * math::PI / 180.f;
+      float rotRad = scene.getSelectedFigure()->rotationAngle * core::math::PI / 180.f;
       sf::Vector2f rotOffset(std::sin(rotRad) * 20.f * markerScale,
                              -std::cos(rotRad) * 20.f * markerScale);
       sf::Vector2f rotPos = absTc + rotOffset;

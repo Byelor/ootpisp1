@@ -27,7 +27,7 @@ namespace core {
     }
 
     sf::FloatRect Figure::getLocalBoundingBox() const {
-        return geometry::computeBoundingBox(m_vertices);
+        return geometry::computeBoundingBox(getVertices());
     }
 
     bool Figure::contains(sf::Vector2f point) const {
@@ -111,7 +111,7 @@ namespace core {
 
         size_t n = verticesRelative.size();
 
-        // Рисуем заливку
+        //  
         sf::ConvexShape fillShape(static_cast<std::size_t>(n));
         for (size_t i = 0; i < n; ++i) {
             fillShape.setPoint(i, verticesRelative[i]);
@@ -124,13 +124,13 @@ namespace core {
 
         if (edges.empty()) return;
 
-        // Рисуем грани
+        //  
         std::vector<sf::Vector2f> V(n);
         for (size_t i = 0; i < n; ++i) {
             V[i] = getAbsoluteVertex(verticesRelative[i]);
         }
 
-        // Отрисовка граней с поддержкой разной толщины
+        //      
         for (size_t i = 0; i < n; ++i) {
             size_t next = (i + 1) % n;
             size_t eIdx = i < edges.size() ? i : 0;

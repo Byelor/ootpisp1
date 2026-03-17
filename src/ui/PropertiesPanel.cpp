@@ -1,12 +1,15 @@
 #include "PropertiesPanel.hpp"
-#include "core/Figures.hpp"
+#include "core/Scene.hpp"
+#include "core/CompositeFigure.hpp"
+#include "core/MathUtils.hpp"
 #include <algorithm>
+#include <imgui.h>
 #include <cstdio>
 #include <string>
 
 namespace ui {
 
-bool PropertiesPanel::render(core::Scene &scene, core::Viewport &viewport) {
+bool PropertiesPanel::render(core::Scene &scene, core::Viewport &viewport, std::vector<core::Figure*>& compoundSelection, std::vector<std::unique_ptr<core::Figure>>& userRegistry, Toolbar& toolbar) {
   core::Figure *selectedFigure = scene.getSelectedFigure();
   bool fitRequested = false;
   ImGui::SetNextWindowPos(ImVec2(ImGui::GetIO().DisplaySize.x - 280, 0),
@@ -133,15 +136,26 @@ bool PropertiesPanel::render(core::Scene &scene, core::Viewport &viewport) {
 
   // 3. Fill Color
   ImGui::Separator();
-  ImGui::Text("Fill Color");
-  float fill[4] = {
-      selectedFigure->fillColor.r / 255.f, selectedFigure->fillColor.g / 255.f,
-      selectedFigure->fillColor.b / 255.f, selectedFigure->fillColor.a / 255.f};
-  if (ImGui::ColorEdit4("##FillColor", fill)) {
-    selectedFigure->fillColor.r = static_cast<sf::Uint8>(fill[0] * 255.f);
-    selectedFigure->fillColor.g = static_cast<sf::Uint8>(fill[1] * 255.f);
-    selectedFigure->fillColor.b = static_cast<sf::Uint8>(fill[2] * 255.f);
-    selectedFigure->fillColor.a = static_cast<sf::Uint8>(fill[3] * 255.f);
+  ImGui::Text("Appearance");
+  float col[4] = {selectedFigure->fillColor.r / 255.f,
+                  selectedFigure->fillColor.g / 255.f,
+                  selectedFigure->fillColor.b / 255.f,
+                  selectedFigure->fillColor.a / 255.f};
+  if (ImGui::ColorEdit4("Fill Color", col)) {
+    sf::Color newColor(static_cast<sf::Uint8>(col[0] * 255.f),
+                       static_cast<sf::Uint8>(col[1] * 255.f),
+                       static_cast<sf::Uint8>(col[2] * 255.f),
+                       static_cast<sf::Uint8>(col[3] * 255.f));
+    
+    auto applyColor = [](core::Figure* f, sf::Color c, auto& applyRef) -> void {
+        f->fillColor = c;
+        if (auto cf = dynamic_cast<core::CompositeFigure*>(f)) {
+            for (auto& child : cf->children) {
+                applyRef(child.figure.get(), c, applyRef);
+            }
+        }
+    };
+    applyColor(selectedFigure, newColor, applyColor);
   }
   ImGui::Spacing();
 
@@ -281,6 +295,15 @@ bool PropertiesPanel::render(core::Scene &scene, core::Viewport &viewport) {
             selectedFigure->edges[i].width = width;
           }
 
+          if (auto cf = dynamic_cast<core::CompositeFigure*>(selectedFigure)) {
+              if (cf->getVerticesMutable().size() > i + 1) { 
+                  float angle = cf->getEdgeAngle(i);
+                  if (ImGui::DragFloat("Angle", &angle, 1.f, -360.f, 360.f)) {
+                      cf->setEdgeAngle(i, angle);
+                  }
+              }
+          }
+
           float eCol[4] = {selectedFigure->edges[i].color.r / 255.f,
                            selectedFigure->edges[i].color.g / 255.f,
                            selectedFigure->edges[i].color.b / 255.f,
@@ -326,6 +349,150 @@ bool PropertiesPanel::render(core::Scene &scene, core::Viewport &viewport) {
   ImGui::TextDisabled("TL: %.1f, %.1f", bounds.left, bounds.top);
   ImGui::TextDisabled("BR: %.1f, %.1f", bounds.left + bounds.width,
                       bounds.top + bounds.height);
+
+  if (!compoundSelection.empty()) {
+      ImGui::Separator();
+      ImGui::Text("COMPOUND SELECTION (%zu)", compoundSelection.size());
+      if (ImGui::Button("Group Selected", ImVec2(-1, 0))) {
+          auto newCompound = std::make_unique<core::CompositeFigure>();
+          newCompound->figureName = "Grouped Figure";
+          newCompound->preset = core::CompositeFigure::Preset::None;
+          
+          sf::Vector2f center(0.f, 0.f);
+          for (auto* fig : compoundSelection) {
+              center += fig->anchor + fig->parentOrigin;
+          }
+          center.x /= compoundSelection.size();
+          center.y /= compoundSelection.size();
+          newCompound->anchor = center;
+
+          for (auto* fig : compoundSelection) {
+              core::CompositeFigure::Child child;
+              child.localOffset = fig->anchor + fig->parentOrigin - center;
+              child.localRotation = fig->rotationAngle;
+              
+              // extract from scene
+              child.figure = scene.extractFigure(fig);
+              
+              // reset isolated metrics
+              child.figure->rotationAngle = 0.f;
+              child.figure->anchor = sf::Vector2f(0.f, 0.f);
+              child.figure->parentOrigin = sf::Vector2f(0.f, 0.f);
+              
+              newCompound->children.push_back(std::move(child));
+          }
+          auto* ptr = newCompound.get();
+          scene.addFigure(std::move(newCompound));
+          scene.setSelectedFigure(ptr);
+          compoundSelection.clear();
+      }
+      ImGui::Spacing();
+  } else if (auto cf = dynamic_cast<core::CompositeFigure*>(selectedFigure)) {
+      if (!cf->children.empty()) {
+          ImGui::Separator();
+          ImGui::Text("Name: %s", cf->figureName.c_str());
+          ImGui::Text("Child Figures (%zu)", cf->children.size());
+          
+          if (ImGui::Button("Save as Toolbar Template", ImVec2(-1, 0))) {
+              ImGui::OpenPopup("Save Template");
+          }
+          
+          if (ImGui::BeginPopupModal("Save Template", nullptr, ImGuiWindowFlags_AlwaysAutoResize)) {
+              static char tmplName[128] = "My Custom Figure";
+              ImGui::InputText("Name", tmplName, sizeof(tmplName));
+              if (ImGui::Button("Save", ImVec2(120, 0))) {
+                  // To duplicate, we use a simple JSON/SceneSerializer trick or just clone if we implement it.
+                  // For now, let's assume we can implement clone() in CompositeFigure.
+                  auto copy = cf->clone();
+                  if (auto comp = dynamic_cast<core::CompositeFigure*>(copy.get())) {
+                      comp->figureName = tmplName;
+                  }
+                  userRegistry.push_back(std::move(copy));
+                  ui::Toolbar::CustomTool ct;
+                  ct.name = tmplName;
+                  ct.customId = userRegistry.size() - 1;
+                  toolbar.customTools.push_back(ct);
+                  ImGui::CloseCurrentPopup();
+              }
+              ImGui::SameLine();
+              if (ImGui::Button("Cancel", ImVec2(120, 0))) {
+                  ImGui::CloseCurrentPopup();
+              }
+              ImGui::EndPopup();
+          }
+
+          if (ImGui::Button("Ungroup All", ImVec2(-1, 0))) {
+              for (auto& child : cf->children) {
+                  auto extracted = std::move(child.figure);
+                  sf::Vector2f scaledOffset(child.localOffset.x * cf->scale.x, child.localOffset.y * cf->scale.y);
+                  extracted->parentOrigin = cf->parentOrigin;
+                  extracted->anchor = cf->anchor + core::math::rotate(scaledOffset, cf->rotationAngle * core::math::DEG_TO_RAD);
+                  extracted->rotationAngle += cf->rotationAngle + child.localRotation;
+                  extracted->scale.x *= cf->scale.x;
+                  extracted->scale.y *= cf->scale.y;
+                  scene.addFigure(std::move(extracted));
+              }
+              cf->children.clear();
+              scene.removeFigure(cf);
+              scene.setSelectedFigure(nullptr);
+              ImGui::End();
+              return fitRequested;
+          }
+          
+          ImGui::Separator();
+          ImGui::Text("Global Outline Properties");
+          static float globalOutlineWidth = 1.0f;
+          if (ImGui::DragFloat("Outline Width##Global", &globalOutlineWidth, 0.5f, 0.f, 100.f)) {
+              auto applyOutline = [](core::Figure* f, float w, auto& applyRef) -> void {
+                  for (auto& edge : f->edges) edge.width = w;
+                  if (auto cFig = dynamic_cast<core::CompositeFigure*>(f)) {
+                      for (auto& child : cFig->children) applyRef(child.figure.get(), w, applyRef);
+                  }
+              };
+              applyOutline(cf, globalOutlineWidth, applyOutline);
+          }
+          static float globalOutlineCol[4] = {0.f, 0.f, 0.f, 1.f};
+          if (ImGui::ColorEdit4("Outline Color##Global", globalOutlineCol)) {
+              sf::Color newColor(static_cast<sf::Uint8>(globalOutlineCol[0] * 255.f),
+                                 static_cast<sf::Uint8>(globalOutlineCol[1] * 255.f),
+                                 static_cast<sf::Uint8>(globalOutlineCol[2] * 255.f),
+                                 static_cast<sf::Uint8>(globalOutlineCol[3] * 255.f));
+              auto applyOutlineColor = [](core::Figure* f, sf::Color c, auto& applyRef) -> void {
+                  for (auto& edge : f->edges) edge.color = c;
+                  if (auto cFig = dynamic_cast<core::CompositeFigure*>(f)) {
+                      for (auto& child : cFig->children) applyRef(child.figure.get(), c, applyRef);
+                  }
+              };
+              applyOutlineColor(cf, newColor, applyOutlineColor);
+          }
+          ImGui::Separator();
+          
+          for (size_t i = 0; i < cf->children.size(); ++i) {
+              ImGui::PushID(static_cast<int>(2000 + i));
+              ImGui::Text("Child %zu", i);
+              float off[2] = {cf->children[i].localOffset.x, cf->children[i].localOffset.y};
+              if (ImGui::DragFloat2("Offset", off, 1.0f)) {
+                  cf->children[i].localOffset = {off[0], off[1]};
+              }
+              ImGui::DragFloat("Rel Rot", &cf->children[i].localRotation, 1.0f);
+              if (ImGui::Button("Extract & Remove")) {
+                  auto extracted = std::move(cf->children[i].figure);
+                  sf::Vector2f scaledOffset(cf->children[i].localOffset.x * cf->scale.x, cf->children[i].localOffset.y * cf->scale.y);
+                  extracted->parentOrigin = cf->parentOrigin;
+                  extracted->anchor = cf->anchor + core::math::rotate(scaledOffset, cf->rotationAngle * core::math::DEG_TO_RAD);
+                  extracted->rotationAngle += cf->rotationAngle + cf->children[i].localRotation;
+                  extracted->scale.x *= cf->scale.x;
+                  extracted->scale.y *= cf->scale.y;
+                  scene.addFigure(std::move(extracted));
+                  cf->children.erase(cf->children.begin() + i);
+                  ImGui::PopID();
+                  break;
+              }
+              ImGui::PopID();
+              ImGui::Spacing();
+          }
+      }
+  }
 
   ImGui::End();
   return fitRequested;

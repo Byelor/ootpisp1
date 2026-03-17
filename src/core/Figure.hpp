@@ -13,6 +13,8 @@ struct Edge {
 class Figure {
 public:
   virtual ~Figure() = default;
+  virtual std::unique_ptr<Figure> clone() const = 0;
+  virtual std::string typeName() const = 0;
 
   // Anchor point (relative to parentOrigin)
   sf::Vector2f anchor{0.f, 0.f};
@@ -67,7 +69,7 @@ public:
 
   // Apply the current scale factor permanently to the figure's vertices
   // and reset the scale vector to (1, 1).
-  void applyScale();
+  virtual void applyScale();
 
   // Return true if all edges should be styled identically in the UI
   virtual bool hasUniformEdge() const { return false; }
