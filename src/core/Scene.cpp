@@ -15,6 +15,14 @@ bool Scene::removeFigure(Figure *fig) {
   return m_figures.remove(fig);
 }
 
+bool Scene::insertFigure(std::unique_ptr<Figure> fig, int index) {
+  return m_figures.insert(std::move(fig), index);
+}
+
+bool Scene::moveFigure(int fromIdx, int toIdx) {
+  return m_figures.moveItem(fromIdx, toIdx);
+}
+
 Figure *Scene::hitTest(sf::Vector2f point) const {
   return m_figures.hitTest(point);
 }

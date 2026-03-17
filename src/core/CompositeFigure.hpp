@@ -30,6 +30,10 @@ public:
 
     std::vector<Child> children;
 
+    std::unique_ptr<Figure> extractChild(Figure* childPtr);
+    void insertChild(std::unique_ptr<Figure> childFigure, int index, sf::Vector2f localOffset, float localRotation);
+    bool moveChild(int fromIdx, int toIdx);
+
     CompositeFigure() = default;
     explicit CompositeFigure(std::vector<sf::Vector2f> vertices, std::string name = "Custom");
 

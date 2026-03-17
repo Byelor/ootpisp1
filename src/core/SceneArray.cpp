@@ -36,6 +36,37 @@ std::unique_ptr<Figure> SceneArray::extract(Figure* fig) {
     return nullptr;
 }
 
+bool SceneArray::insert(std::unique_ptr<Figure> fig, int idx) {
+    if (!fig || m_count >= SCENE_MAX_FIGURES) return false;
+    if (idx < 0) idx = 0;
+    if (idx > m_count) idx = m_count;
+
+    for (int i = m_count; i > idx; --i) {
+        m_data[i] = std::move(m_data[i - 1]);
+    }
+    m_data[idx] = std::move(fig);
+    ++m_count;
+    return true;
+}
+
+bool SceneArray::moveItem(int fromIdx, int toIdx) {
+    if (fromIdx < 0 || fromIdx >= m_count || toIdx < 0 || toIdx >= m_count) return false;
+    if (fromIdx == toIdx) return true;
+
+    auto temp = std::move(m_data[fromIdx]);
+    if (fromIdx < toIdx) {
+        for (int i = fromIdx; i < toIdx; ++i) {
+            m_data[i] = std::move(m_data[i + 1]);
+        }
+    } else {
+        for (int i = fromIdx; i > toIdx; --i) {
+            m_data[i] = std::move(m_data[i - 1]);
+        }
+    }
+    m_data[toIdx] = std::move(temp);
+    return true;
+}
+
 Figure* SceneArray::get(int idx) const {
     if (idx < 0 || idx >= m_count) return nullptr;
     return m_data[idx].get();

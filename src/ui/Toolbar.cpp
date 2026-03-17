@@ -8,7 +8,7 @@ bool Toolbar::render(Tool &currentTool, core::Scene& scene, int& selectedCustomT
   bool toolChanged = false;
 
   ImGui::SetNextWindowPos(ImVec2(0, 0), ImGuiCond_Always);
-  ImGui::SetNextWindowSize(ImVec2(100, ImGui::GetIO().DisplaySize.y),
+  ImGui::SetNextWindowSize(ImVec2(ImGui::GetIO().DisplaySize.x, 60),
                            ImGuiCond_Always);
 
   ImGuiWindowFlags flags = ImGuiWindowFlags_NoTitleBar |
@@ -18,7 +18,8 @@ bool Toolbar::render(Tool &currentTool, core::Scene& scene, int& selectedCustomT
 
   ImGui::Begin("Toolbar", nullptr, flags);
 
-  if (ImGui::Button("Save", ImVec2(-1, 0))) ImGui::OpenPopup("Save Scene");
+  if (ImGui::Button("Save", ImVec2(60, 40))) ImGui::OpenPopup("Save Scene");
+  ImGui::SameLine();
   if (ImGui::BeginPopupModal("Save Scene", nullptr, ImGuiWindowFlags_AlwaysAutoResize)) {
       static char savePath[512] = "scene.scene";
       ImGui::InputText("path", savePath, sizeof(savePath));
@@ -33,7 +34,8 @@ bool Toolbar::render(Tool &currentTool, core::Scene& scene, int& selectedCustomT
       ImGui::EndPopup();
   }
 
-  if (ImGui::Button("Load", ImVec2(-1, 0))) ImGui::OpenPopup("Load Scene");
+  if (ImGui::Button("Load", ImVec2(60, 40))) ImGui::OpenPopup("Load Scene");
+  ImGui::SameLine();
   if (ImGui::BeginPopupModal("Load Scene", nullptr, ImGuiWindowFlags_AlwaysAutoResize)) {
       static char loadPath[512] = "scene.scene";
       ImGui::InputText("path", loadPath, sizeof(loadPath));
@@ -55,7 +57,9 @@ bool Toolbar::render(Tool &currentTool, core::Scene& scene, int& selectedCustomT
       ImGui::EndPopup();
   }
 
-  ImGui::Separator();
+  // Separator can be drawn vertically or omitted, we'll just omit or add spacing
+  ImGui::Dummy(ImVec2(10, 0));
+  ImGui::SameLine();
 
   auto renderToolButton = [&](const char *label, Tool expectedTool) {
     bool isActive = (currentTool == expectedTool);
@@ -64,7 +68,7 @@ bool Toolbar::render(Tool &currentTool, core::Scene& scene, int& selectedCustomT
                             ImGui::GetStyle().Colors[ImGuiCol_ButtonActive]);
     }
 
-    if (ImGui::Button(label, ImVec2(-1, 40))) {
+    if (ImGui::Button(label, ImVec2(65, 40))) {
       if (!isActive) {
         currentTool = expectedTool;
         if (expectedTool != Tool::Custom) {
@@ -80,24 +84,33 @@ bool Toolbar::render(Tool &currentTool, core::Scene& scene, int& selectedCustomT
   };
 
   renderToolButton("Select", Tool::Select);
-  ImGui::Separator();
+  ImGui::SameLine();
   renderToolButton("Rect", Tool::Rectangle);
+  ImGui::SameLine();
   renderToolButton("Tri", Tool::Triangle);
+  ImGui::SameLine();
   renderToolButton("Hex", Tool::Hexagon);
+  ImGui::SameLine();
   renderToolButton("Rhombus", Tool::Rhombus);
+  ImGui::SameLine();
   renderToolButton("Trapezoid", Tool::Trapezoid);
+  ImGui::SameLine();
   renderToolButton("Circle", Tool::Circle);
-  ImGui::Separator();
+  ImGui::SameLine();
   renderToolButton("Polyline", Tool::Polyline);
-  renderToolButton("Cpnd Sel", Tool::CompoundSelect);
+  ImGui::SameLine();
+  renderToolButton("Compound", Tool::CompoundSelect);
 
   if (!customTools.empty()) {
-      ImGui::Separator();
+      ImGui::SameLine();
+      ImGui::Dummy(ImVec2(10, 0));
+      ImGui::SameLine();
       ImGui::Text("Custom:");
+      ImGui::SameLine();
       for (const auto& ct : customTools) {
           bool isActive = (currentTool == Tool::Custom && selectedCustomToolId == ct.customId);
           if (isActive) ImGui::PushStyleColor(ImGuiCol_Button, ImGui::GetStyle().Colors[ImGuiCol_ButtonActive]);
-          if (ImGui::Button(ct.name.c_str(), ImVec2(-1, 40))) {
+          if (ImGui::Button(ct.name.c_str(), ImVec2(70, 40))) {
               if (!isActive) {
                   currentTool = Tool::Custom;
                   selectedCustomToolId = ct.customId;
@@ -105,6 +118,7 @@ bool Toolbar::render(Tool &currentTool, core::Scene& scene, int& selectedCustomT
               }
           }
           if (isActive) ImGui::PopStyleColor();
+          ImGui::SameLine();
       }
   }
 

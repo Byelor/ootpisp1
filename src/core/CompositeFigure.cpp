@@ -139,6 +139,48 @@ void CompositeFigure::draw(sf::RenderTarget& target) const {
     }
 }
 
+std::unique_ptr<Figure> CompositeFigure::extractChild(Figure* childPtr) {
+    for (auto it = children.begin(); it != children.end(); ++it) {
+        if (it->figure.get() == childPtr) {
+            auto ptr = std::move(it->figure);
+            children.erase(it);
+            return ptr;
+        }
+    }
+    return nullptr;
+}
+
+void CompositeFigure::insertChild(std::unique_ptr<Figure> childFigure, int index, sf::Vector2f localOffset, float localRotation) {
+    if (!childFigure) return;
+    if (index < 0) index = 0;
+    if (index > children.size()) index = children.size();
+
+    Child c;
+    c.figure = std::move(childFigure);
+    c.localOffset = localOffset;
+    c.localRotation = localRotation;
+
+    children.insert(children.begin() + index, std::move(c));
+}
+
+bool CompositeFigure::moveChild(int fromIdx, int toIdx) {
+    if (fromIdx < 0 || fromIdx >= children.size() || toIdx < 0 || toIdx >= children.size()) return false;
+    if (fromIdx == toIdx) return true;
+
+    auto temp = std::move(children[fromIdx]);
+    if (fromIdx < toIdx) {
+        for (int i = fromIdx; i < toIdx; ++i) {
+            children[i] = std::move(children[i + 1]);
+        }
+    } else {
+        for (int i = fromIdx; i > toIdx; --i) {
+            children[i] = std::move(children[i - 1]);
+        }
+    }
+    children[toIdx] = std::move(temp);
+    return true;
+}
+
 bool CompositeFigure::contains(sf::Vector2f point) const {
     if (!m_vertices.empty() && Figure::contains(point)) {
         return true;

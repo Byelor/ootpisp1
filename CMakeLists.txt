@@ -53,6 +53,7 @@ add_executable(GraphEditor
     src/ui/Toolbar.cpp
     src/ui/PropertiesPanel.cpp
     src/ui/CreateFigureModal.cpp
+    src/ui/LayerPanel.cpp
     src/utils/GeometryUtils.cpp
 )
 

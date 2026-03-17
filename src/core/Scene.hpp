@@ -9,6 +9,8 @@ namespace core {
 class Scene {
 public:
   void addFigure(std::unique_ptr<Figure> fig);
+  bool insertFigure(std::unique_ptr<Figure> fig, int index);
+  bool moveFigure(int fromIdx, int toIdx);
 
   // Removes the given figure from the scene. Returns true if removed.
   bool removeFigure(Figure *fig);

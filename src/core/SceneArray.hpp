@@ -24,6 +24,12 @@ public:
     /// Извлечь фигуру (передать владение вызывающему).
     std::unique_ptr<Figure> extract(Figure* fig);
 
+    /// Вставить фигуру по индексу.
+    bool insert(std::unique_ptr<Figure> fig, int idx);
+
+    /// Сдвинуть фигуру с одного индекса на другой (для drag and drop).
+    bool moveItem(int fromIdx, int toIdx);
+
     /// Количество фигур
     int count() const { return m_count; }
 

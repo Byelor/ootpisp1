@@ -5,6 +5,7 @@
 #include "ui/Toolbar.hpp"
 #include "ui/PropertiesPanel.hpp"
 #include "ui/CreateFigureModal.hpp"
+#include "ui/LayerPanel.hpp"
 #include <SFML/Graphics.hpp>
 #include <SFML/Window.hpp>
 #include <cmath>
@@ -52,6 +53,7 @@ int main() {
 
   ui::Toolbar toolbar;
   ui::PropertiesPanel propertiesPanel;
+  ui::LayerPanel layerPanel;
   ui::CreateFigureModal createModal;
   ui::Tool currentTool = ui::Tool::Select;
 
@@ -802,6 +804,7 @@ int main() {
     // Render UI
     toolbar.render(currentTool, scene, selectedCustomToolId);
     bool fitRequested = propertiesPanel.render(scene, viewport, compoundSelection, userRegistry, toolbar);
+    layerPanel.render(scene);
     createModal.render(scene);
 
     if (currentTool != ui::Tool::CompoundSelect) {
