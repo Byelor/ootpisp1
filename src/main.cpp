@@ -425,27 +425,64 @@ int main() {
                 dragOffset = mousePos - absoluteAnchor;
               } else {
                 core::Figure *hit = scene.hitTest(mousePos);
-                scene.setSelectedFigure(hit);
-                if (selFig != hit)
-                  isNodeEditMode = false;
 
-                if (hit && doubleClicked) {
-                  auto compHit = dynamic_cast<core::CompositeFigure*>(hit);
-                  if (compHit) {
-                      if (compHit->children.empty()) {
-                          isNodeEditMode = true;
-                      } else {
-                          // Drill down into group to select a subfigure
-                          core::Figure* childHit = compHit->hitTestChild(mousePos);
-                          if (childHit) {
-                              scene.setSelectedFigure(childHit);
-                          }
-                      }
-                  }
+                // Recursively check if selFig is a descendant of hit
+                auto isDescendantOf = [](core::Figure* child, core::CompositeFigure* parent) -> bool {
+                    for (auto& c : parent->children) {
+                        if (c.figure.get() == child) return true;
+                        if (auto cf = dynamic_cast<core::CompositeFigure*>(c.figure.get())) {
+                            for (auto& cc : cf->children) {
+                                if (cc.figure.get() == child) return true;
+                            }
+                        }
+                    }
+                    return false;
+                };
+
+                bool selFigIsChildOfHit = false;
+                core::CompositeFigure* hitAsComp = nullptr;
+                if (hit) hitAsComp = dynamic_cast<core::CompositeFigure*>(hit);
+                if (hitAsComp && selFig && selFig != hit) {
+                    selFigIsChildOfHit = isDescendantOf(selFig, hitAsComp);
+                }
+
+                if (doubleClicked && hit) {
+                    if (selFigIsChildOfHit) {
+                        // Already inside a group — second double-click enters node edit mode on the subfigure
+                        isNodeEditMode = true;
+                    } else if (hitAsComp && !hitAsComp->children.empty()) {
+                        // First double-click on a group: drill down to select a child
+                        core::Figure* childHit = hitAsComp->hitTestChild(mousePos);
+                        if (childHit) {
+                            scene.setSelectedFigure(childHit);
+                            isNodeEditMode = false;
+                        } else {
+                            scene.setSelectedFigure(hit);
+                            isNodeEditMode = true;
+                        }
+                    } else {
+                        // Double-click on a plain figure: enter node edit mode
+                        scene.setSelectedFigure(hit);
+                        isNodeEditMode = true;
+                    }
                 } else if (hit) {
-                  isDragging = true;
-                  sf::Vector2f absoluteAnchor = hit->parentOrigin + hit->anchor;
-                  dragOffset = mousePos - absoluteAnchor;
+                    // Normal single click
+                    if (selFigIsChildOfHit) {
+                        // Keep the subfigure selected, drag the whole group
+                        isDragging = true;
+                        sf::Vector2f absoluteAnchor = hit->parentOrigin + hit->anchor;
+                        dragOffset = mousePos - absoluteAnchor;
+                    } else {
+                        scene.setSelectedFigure(hit);
+                        if (selFig != hit)
+                            isNodeEditMode = false;
+                        isDragging = true;
+                        sf::Vector2f absoluteAnchor = hit->parentOrigin + hit->anchor;
+                        dragOffset = mousePos - absoluteAnchor;
+                    }
+                } else {
+                    scene.setSelectedFigure(nullptr);
+                    isNodeEditMode = false;
                 }
               }
             } else if (currentTool == ui::Tool::Polyline) {
@@ -692,19 +729,18 @@ int main() {
                 sf::Vector2f(event.mouseMove.x, event.mouseMove.y));
             auto &verts = scene.getSelectedFigure()->getVerticesMutable();
 
-            sf::Vector2f absoluteAnchor =
-                scene.getSelectedFigure()->parentOrigin +
-                scene.getSelectedFigure()->anchor;
+            sf::Vector2f absoluteAnchor = scene.getSelectedFigure()->getAbsoluteAnchor();
             sf::Vector2f deltaAbs = mousePos - absoluteAnchor;
-            float invRad =
-                -scene.getSelectedFigure()->rotationAngle * core::math::PI / 180.f;
+            float absRot = scene.getSelectedFigure()->getAbsoluteRotation();
+            float invRad = -absRot * core::math::PI / 180.f;
             float rx =
                 deltaAbs.x * std::cos(invRad) - deltaAbs.y * std::sin(invRad);
             float ry =
                 deltaAbs.x * std::sin(invRad) + deltaAbs.y * std::cos(invRad);
 
-            float scaledX = rx / scene.getSelectedFigure()->scale.x;
-            float scaledY = ry / scene.getSelectedFigure()->scale.y;
+            sf::Vector2f absScale = scene.getSelectedFigure()->getAbsoluteScale();
+            float scaledX = rx / absScale.x;
+            float scaledY = ry / absScale.y;
             verts[draggingVertexIndex] = sf::Vector2f(scaledX, scaledY);
           } else if (isDraggingAnchor && scene.getSelectedFigure()) {
             sf::Vector2f mousePos = viewport.screenToWorld(
