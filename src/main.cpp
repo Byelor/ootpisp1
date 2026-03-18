@@ -59,6 +59,7 @@ int main() {
 
   bool isDragging = false;
   bool isDraggingAnchor = false;
+  bool isDrilledIntoGroup = false;
   bool isNodeEditMode = false;
   bool isRotating = false;
   float rotationStartAngle = 0.f;
@@ -449,30 +450,37 @@ int main() {
                 if (doubleClicked && hit) {
                     if (selFigIsChildOfHit) {
                         // Already inside a group — second double-click enters node edit mode on the subfigure
+                        isDrilledIntoGroup = false;
                         isNodeEditMode = true;
                     } else if (hitAsComp && !hitAsComp->children.empty()) {
                         // First double-click on a group: drill down to select a child
                         core::Figure* childHit = hitAsComp->hitTestChild(mousePos);
                         if (childHit) {
                             scene.setSelectedFigure(childHit);
+                            isDrilledIntoGroup = true;
                             isNodeEditMode = false;
                         } else {
                             scene.setSelectedFigure(hit);
+                            isDrilledIntoGroup = false;
                             isNodeEditMode = true;
                         }
                     } else {
                         // Double-click on a plain figure: enter node edit mode
+                        isDrilledIntoGroup = false;
                         scene.setSelectedFigure(hit);
                         isNodeEditMode = true;
                     }
                 } else if (hit) {
-                    // Normal single click
-                    if (selFigIsChildOfHit) {
-                        // Keep the subfigure selected, drag the whole group
+                    // Normal single click — always select the top-level figure
+                    // BUT if we're drilled into a group (isDrilledIntoGroup),
+                    // preserve the subfigure selection so the 2nd double-click works.
+                    if (isDrilledIntoGroup && selFigIsChildOfHit) {
+                        // Intermediate single-click between 2 double-clicks; keep subfigure selected
                         isDragging = true;
                         sf::Vector2f absoluteAnchor = hit->parentOrigin + hit->anchor;
                         dragOffset = mousePos - absoluteAnchor;
                     } else {
+                        isDrilledIntoGroup = false;
                         scene.setSelectedFigure(hit);
                         if (selFig != hit)
                             isNodeEditMode = false;
