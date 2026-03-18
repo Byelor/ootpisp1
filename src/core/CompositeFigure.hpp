@@ -24,8 +24,6 @@ public:
 
     struct Child {
         std::unique_ptr<Figure> figure;
-        sf::Vector2f localOffset;
-        float localRotation = 0.f;
     };
 
     std::vector<Child> children;
@@ -33,6 +31,8 @@ public:
     std::unique_ptr<Figure> extractChild(Figure* childPtr);
     void insertChild(std::unique_ptr<Figure> childFigure, int index, sf::Vector2f localOffset, float localRotation);
     bool moveChild(int fromIdx, int toIdx);
+
+    Figure* hitTestChild(sf::Vector2f point) const;
 
     CompositeFigure() = default;
     explicit CompositeFigure(std::vector<sf::Vector2f> vertices, std::string name = "Custom");

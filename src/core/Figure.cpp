@@ -1,14 +1,41 @@
 #include "Figure.hpp"
 #include "MathUtils.hpp"
+#include "CompositeFigure.hpp"
 #include "utils/GeometryUtils.hpp"
 #include <cmath>
 
 namespace core {
 
+    sf::Vector2f Figure::getAbsoluteAnchor() const {
+        if (parentFigure) {
+            sf::Vector2f pScale = parentFigure->getAbsoluteScale();
+            sf::Vector2f scaledAnchor(anchor.x * pScale.x, anchor.y * pScale.y);
+            sf::Vector2f rotatedAnchor = math::rotate(scaledAnchor, parentFigure->getAbsoluteRotation() * math::DEG_TO_RAD);
+            return parentFigure->getAbsoluteAnchor() + rotatedAnchor;
+        }
+        return parentOrigin + anchor;
+    }
+
+    float Figure::getAbsoluteRotation() const {
+        if (parentFigure) {
+            return parentFigure->getAbsoluteRotation() + rotationAngle;
+        }
+        return rotationAngle;
+    }
+
+    sf::Vector2f Figure::getAbsoluteScale() const {
+        if (parentFigure) {
+            sf::Vector2f pScale = parentFigure->getAbsoluteScale();
+            return {scale.x * pScale.x, scale.y * pScale.y};
+        }
+        return scale;
+    }
+
     sf::Vector2f Figure::getAbsoluteVertex(sf::Vector2f relative) const {
-        sf::Vector2f scaled(relative.x * scale.x, relative.y * scale.y);
-        sf::Vector2f rotated = math::rotate(scaled, rotationAngle * math::DEG_TO_RAD);
-        return parentOrigin + anchor + rotated;
+        sf::Vector2f absScale = getAbsoluteScale();
+        sf::Vector2f scaled(relative.x * absScale.x, relative.y * absScale.y);
+        sf::Vector2f rotated = math::rotate(scaled, getAbsoluteRotation() * math::DEG_TO_RAD);
+        return getAbsoluteAnchor() + rotated;
     }
 
     sf::FloatRect Figure::getBoundingBox() const {
@@ -116,9 +143,9 @@ namespace core {
         for (size_t i = 0; i < n; ++i) {
             fillShape.setPoint(i, verticesRelative[i]);
         }
-        fillShape.setPosition(parentOrigin + anchor);
-        fillShape.setRotation(rotationAngle);
-        fillShape.setScale(scale);
+        fillShape.setPosition(getAbsoluteAnchor());
+        fillShape.setRotation(getAbsoluteRotation());
+        fillShape.setScale(getAbsoluteScale());
         fillShape.setFillColor(fillColor);
         target.draw(fillShape);
 

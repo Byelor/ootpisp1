@@ -367,19 +367,9 @@ bool PropertiesPanel::render(core::Scene &scene, core::Viewport &viewport, std::
           newCompound->anchor = center;
 
           for (auto* fig : compoundSelection) {
-              core::CompositeFigure::Child child;
-              child.localOffset = fig->anchor + fig->parentOrigin - center;
-              child.localRotation = fig->rotationAngle;
-              
-              // extract from scene
-              child.figure = scene.extractFigure(fig);
-              
-              // reset isolated metrics
-              child.figure->rotationAngle = 0.f;
-              child.figure->anchor = sf::Vector2f(0.f, 0.f);
-              child.figure->parentOrigin = sf::Vector2f(0.f, 0.f);
-              
-              newCompound->children.push_back(std::move(child));
+              sf::Vector2f offset = fig->anchor + fig->parentOrigin - center;
+              float rot = fig->rotationAngle;
+              newCompound->insertChild(scene.extractFigure(fig), newCompound->children.size(), offset, rot);
           }
           auto* ptr = newCompound.get();
           scene.addFigure(std::move(newCompound));
@@ -424,10 +414,10 @@ bool PropertiesPanel::render(core::Scene &scene, core::Viewport &viewport, std::
           if (ImGui::Button("Ungroup All", ImVec2(-1, 0))) {
               for (auto& child : cf->children) {
                   auto extracted = std::move(child.figure);
-                  sf::Vector2f scaledOffset(child.localOffset.x * cf->scale.x, child.localOffset.y * cf->scale.y);
-                  extracted->parentOrigin = cf->parentOrigin;
-                  extracted->anchor = cf->anchor + core::math::rotate(scaledOffset, cf->rotationAngle * core::math::DEG_TO_RAD);
-                  extracted->rotationAngle += cf->rotationAngle + child.localRotation;
+                  sf::Vector2f scaledOffset(extracted->anchor.x * cf->scale.x, extracted->anchor.y * cf->scale.y);
+                  sf::Vector2f absOffset = core::math::rotate(scaledOffset, cf->rotationAngle * core::math::DEG_TO_RAD);
+                  extracted->parentOrigin = cf->parentOrigin + cf->anchor + absOffset;
+                  extracted->rotationAngle += cf->rotationAngle + extracted->rotationAngle;
                   extracted->scale.x *= cf->scale.x;
                   extracted->scale.y *= cf->scale.y;
                   scene.addFigure(std::move(extracted));
@@ -470,23 +460,22 @@ bool PropertiesPanel::render(core::Scene &scene, core::Viewport &viewport, std::
           for (size_t i = 0; i < cf->children.size(); ++i) {
               ImGui::PushID(static_cast<int>(2000 + i));
               ImGui::Text("Child %zu", i);
-              float off[2] = {cf->children[i].localOffset.x, cf->children[i].localOffset.y};
-              if (ImGui::DragFloat2("Offset", off, 1.0f)) {
-                  cf->children[i].localOffset = {off[0], off[1]};
+              float off[2] = {cf->children[i].figure->anchor.x, cf->children[i].figure->anchor.y};
+              if (ImGui::DragFloat2("Rel Pos", off, 1.0f)) {
+                  cf->children[i].figure->anchor = {off[0], off[1]};
               }
-              ImGui::DragFloat("Rel Rot", &cf->children[i].localRotation, 1.0f);
-              if (ImGui::Button("Extract & Remove")) {
-                  auto extracted = std::move(cf->children[i].figure);
-                  sf::Vector2f scaledOffset(cf->children[i].localOffset.x * cf->scale.x, cf->children[i].localOffset.y * cf->scale.y);
-                  extracted->parentOrigin = cf->parentOrigin;
-                  extracted->anchor = cf->anchor + core::math::rotate(scaledOffset, cf->rotationAngle * core::math::DEG_TO_RAD);
-                  extracted->rotationAngle += cf->rotationAngle + cf->children[i].localRotation;
-                  extracted->scale.x *= cf->scale.x;
-                  extracted->scale.y *= cf->scale.y;
-                  scene.addFigure(std::move(extracted));
-                  cf->children.erase(cf->children.begin() + i);
-                  ImGui::PopID();
-                  break;
+              ImGui::DragFloat("Rel Rot", &cf->children[i].figure->rotationAngle, 1.0f);
+              if (ImGui::Button("Extract")) {
+                  auto extracted = cf->extractChild(cf->children[i].figure.get());
+                  if (extracted) {
+                      sf::Vector2f scaledOffset(extracted->anchor.x * cf->scale.x, extracted->anchor.y * cf->scale.y);
+                      sf::Vector2f absOffset = core::math::rotate(scaledOffset, cf->rotationAngle * core::math::DEG_TO_RAD);
+                      extracted->parentOrigin = cf->parentOrigin + cf->anchor + absOffset;
+                      extracted->rotationAngle += cf->rotationAngle + extracted->rotationAngle;
+                      extracted->scale.x *= cf->scale.x;
+                      extracted->scale.y *= cf->scale.y;
+                      scene.addFigure(std::move(extracted));
+                  }
               }
               ImGui::PopID();
               ImGui::Spacing();

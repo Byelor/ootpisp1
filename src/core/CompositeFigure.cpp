@@ -116,26 +116,7 @@ void CompositeFigure::draw(sf::RenderTarget& target) const {
         Figure::draw(target);
     }
     for (const auto& child : children) {
-        sf::Vector2f oldAnchor = child.figure->anchor;
-        float oldRot = child.figure->rotationAngle;
-        sf::Vector2f oldPO = child.figure->parentOrigin;
-        sf::Vector2f oldScale = child.figure->scale;
-
-        // Propagate transform
-        sf::Vector2f scaledOffset(child.localOffset.x * scale.x, child.localOffset.y * scale.y);
-        sf::Vector2f absOffset = math::rotate(scaledOffset, rotationAngle * math::DEG_TO_RAD);
-        
-        child.figure->parentOrigin = parentOrigin + anchor + absOffset;
-        child.figure->anchor = {0.f, 0.f};
-        child.figure->rotationAngle = rotationAngle + child.localRotation;
-        child.figure->scale = {scale.x * oldScale.x, scale.y * oldScale.y};
-
         child.figure->draw(target);
-
-        child.figure->anchor = oldAnchor;
-        child.figure->rotationAngle = oldRot;
-        child.figure->parentOrigin = oldPO;
-        child.figure->scale = oldScale;
     }
 }
 
@@ -143,6 +124,7 @@ std::unique_ptr<Figure> CompositeFigure::extractChild(Figure* childPtr) {
     for (auto it = children.begin(); it != children.end(); ++it) {
         if (it->figure.get() == childPtr) {
             auto ptr = std::move(it->figure);
+            ptr->parentFigure = nullptr;
             children.erase(it);
             return ptr;
         }
@@ -157,8 +139,9 @@ void CompositeFigure::insertChild(std::unique_ptr<Figure> childFigure, int index
 
     Child c;
     c.figure = std::move(childFigure);
-    c.localOffset = localOffset;
-    c.localRotation = localRotation;
+    c.figure->parentFigure = this;
+    c.figure->anchor = localOffset;
+    c.figure->rotationAngle = localRotation;
 
     children.insert(children.begin() + index, std::move(c));
 }
@@ -186,29 +169,27 @@ bool CompositeFigure::contains(sf::Vector2f point) const {
         return true;
     }
     for (const auto& child : children) {
-        sf::Vector2f oldAnchor = child.figure->anchor;
-        float oldRot = child.figure->rotationAngle;
-        sf::Vector2f oldPO = child.figure->parentOrigin;
-        sf::Vector2f oldScale = child.figure->scale;
-
-        sf::Vector2f scaledOffset(child.localOffset.x * scale.x, child.localOffset.y * scale.y);
-        sf::Vector2f absOffset = math::rotate(scaledOffset, rotationAngle * math::DEG_TO_RAD);
-
-        child.figure->parentOrigin = parentOrigin + anchor + absOffset;
-        child.figure->anchor = {0.f, 0.f};
-        child.figure->rotationAngle = rotationAngle + child.localRotation;
-        child.figure->scale = {scale.x * oldScale.x, scale.y * oldScale.y};
-
-        bool hit = child.figure->contains(point);
-
-        child.figure->anchor = oldAnchor;
-        child.figure->rotationAngle = oldRot;
-        child.figure->parentOrigin = oldPO;
-        child.figure->scale = oldScale;
-
-        if (hit) return true;
+        if (child.figure->contains(point)) return true;
     }
     return false;
+}
+
+Figure* CompositeFigure::hitTestChild(sf::Vector2f point) const {
+    // Traverse in reverse to pick top-most children first
+    for (auto it = children.rbegin(); it != children.rend(); ++it) {
+        const auto& child = *it;
+        
+        if (auto childComp = dynamic_cast<CompositeFigure*>(child.figure.get())) {
+            Figure* subHit = childComp->hitTestChild(point);
+            if (subHit) return subHit;
+        }
+        
+        // Use basic contains if it's not a composite, or composite hitTestChild failed
+        if (child.figure->contains(point)) {
+            return child.figure.get();
+        }
+    }
+    return nullptr;
 }
 
 const std::vector<sf::Vector2f>& CompositeFigure::getVertices() const {
@@ -219,9 +200,9 @@ const std::vector<sf::Vector2f>& CompositeFigure::getVertices() const {
         const auto& cverts = child.figure->getVertices();
         for (const auto& cv : cverts) {
             sf::Vector2f cv_scaled(cv.x * child.figure->scale.x, cv.y * child.figure->scale.y);
-            sf::Vector2f cv_rot = math::rotate(cv_scaled, child.localRotation * math::DEG_TO_RAD);
+            sf::Vector2f cv_rot = math::rotate(cv_scaled, child.figure->rotationAngle * math::DEG_TO_RAD);
             
-            sf::Vector2f offset = child.localOffset + child.figure->anchor + cv_rot;
+            sf::Vector2f offset = child.figure->anchor + cv_rot;
             m_cachedVerts.push_back(offset);
         }
     }
@@ -357,8 +338,7 @@ std::unique_ptr<Figure> CompositeFigure::clone() const {
     for (const auto& child : children) {
         Child c;
         c.figure = child.figure->clone();
-        c.localOffset = child.localOffset;
-        c.localRotation = child.localRotation;
+        c.figure->parentFigure = copy.get();
         copy->children.push_back(std::move(c));
     }
     return copy;
@@ -367,8 +347,8 @@ std::unique_ptr<Figure> CompositeFigure::clone() const {
 void CompositeFigure::applyScale() {
     Figure::applyScale();
     for (auto& child : children) {
-        child.localOffset.x *= scale.x;
-        child.localOffset.y *= scale.y;
+        child.figure->anchor.x *= scale.x;
+        child.figure->anchor.y *= scale.y;
     }
     scale = {1.f, 1.f};
 }
@@ -393,7 +373,7 @@ void CompositeFigure::resetAnchor() {
     }
     
     for (auto& child : children) {
-        child.localOffset -= localCenter;
+        child.figure->anchor -= localCenter;
     }
 }
 
@@ -412,8 +392,8 @@ void CompositeFigure::setAnchorKeepAbsolute(sf::Vector2f newAnchor) {
     float vy = (scale.y != 0.f) ? (rotated.y / scale.y) : 0.f;
 
     for (auto& child : children) {
-        child.localOffset.x -= vx;
-        child.localOffset.y -= vy;
+        child.figure->anchor.x -= vx;
+        child.figure->anchor.y -= vy;
     }
 }
 

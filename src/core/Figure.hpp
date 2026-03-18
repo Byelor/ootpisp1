@@ -5,6 +5,8 @@
 
 namespace core {
 
+class CompositeFigure;
+
 struct Edge {
   float width = 1.0f;
   sf::Color color = sf::Color::Black;
@@ -21,6 +23,9 @@ public:
 
   // Parent origin offset
   sf::Vector2f parentOrigin{0.f, 0.f};
+
+  // Pointer to parent composite figure if this is a child
+  CompositeFigure* parentFigure = nullptr;
 
   // Fill color
   sf::Color fillColor = sf::Color::White;
@@ -46,6 +51,11 @@ public:
     return m_vertices;
   }
   virtual std::vector<sf::Vector2f> &getVerticesMutable() { return m_vertices; }
+
+  // Get absolute transforms including parent hierarchy
+  sf::Vector2f getAbsoluteAnchor() const;
+  float getAbsoluteRotation() const;
+  sf::Vector2f getAbsoluteScale() const;
 
   // Get absolute vertex position including anchor and rotation
   sf::Vector2f getAbsoluteVertex(sf::Vector2f relative) const;

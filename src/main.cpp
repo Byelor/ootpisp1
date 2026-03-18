@@ -431,8 +431,16 @@ int main() {
 
                 if (hit && doubleClicked) {
                   auto compHit = dynamic_cast<core::CompositeFigure*>(hit);
-                  if (compHit && compHit->children.empty()) {
-                    isNodeEditMode = true;
+                  if (compHit) {
+                      if (compHit->children.empty()) {
+                          isNodeEditMode = true;
+                      } else {
+                          // Drill down into group to select a subfigure
+                          core::Figure* childHit = compHit->hitTestChild(mousePos);
+                          if (childHit) {
+                              scene.setSelectedFigure(childHit);
+                          }
+                      }
                   }
                 } else if (hit) {
                   isDragging = true;

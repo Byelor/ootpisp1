@@ -37,8 +37,8 @@ void SceneSerializer::writeFigure(std::ostream& out, const Figure* fig, int inde
         // Children
         out << pad << "children " << cf->children.size() << "\n";
         for (size_t i = 0; i < cf->children.size(); ++i) {
-            out << pad << "  child_offset " << i << " " << cf->children[i].localOffset.x << " " << cf->children[i].localOffset.y << "\n";
-            out << pad << "  child_rotation " << i << " " << cf->children[i].localRotation << "\n";
+            out << pad << "  child_offset " << i << " " << cf->children[i].figure->anchor.x << " " << cf->children[i].figure->anchor.y << "\n";
+            out << pad << "  child_rotation " << i << " " << cf->children[i].figure->rotationAngle << "\n";
             out << pad << "  child_begin\n";
             writeFigure(out, cf->children[i].figure.get(), indent + 4);
             out << pad << "  child_end\n";
@@ -159,10 +159,10 @@ void SceneSerializer::readCommonFields(std::istream& in, CompositeFigure* fig) {
                 while (in >> word) {
                     if (word == "child_offset") {
                         size_t idx;
-                        in >> idx >> child.localOffset.x >> child.localOffset.y;
+                        in >> idx >> child.figure->anchor.x >> child.figure->anchor.y;
                     } else if (word == "child_rotation") {
                         size_t idx;
-                        in >> idx >> child.localRotation;
+                        in >> idx >> child.figure->rotationAngle;
                     } else if (word == "child_begin") {
                         std::string figWord;
                         in >> figWord; 
