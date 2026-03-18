@@ -60,7 +60,9 @@ int main() {
   bool isDragging = false;
   bool isDraggingAnchor = false;
   bool isDrilledIntoGroup = false;
-  bool isDraggingSubfigure = false; // dragging a subfigure inside a group
+  bool isDraggingSubfigure = false;       // actively moving a subfigure
+  bool isDraggingSubfigurePending = false; // waiting to see if it becomes a drag
+  sf::Vector2f subfigureDragStart;        // screen pos where drag initiated
   bool isNodeEditMode = false;
   bool isRotating = false;
   float rotationStartAngle = 0.f;
@@ -476,10 +478,10 @@ int main() {
                     // BUT if we're drilled into a group (isDrilledIntoGroup),
                     // preserve the subfigure selection so the 2nd double-click works.
                     if (isDrilledIntoGroup && selFigIsChildOfHit) {
-                        // Intermediate single-click between 2 double-clicks; keep subfigure selected
-                        // Drag the subfigure in local-to-parent coordinates
-                        isDraggingSubfigure = true;
-                        // dragOffset = mouse - subfig absolute world pos
+                        // Intermediate single-click between 2 double-clicks; keep subfigure selected.
+                        // Don't activate drag immediately — wait for mouse to actually move (drag threshold).
+                        isDraggingSubfigurePending = true;
+                        subfigureDragStart = mousePos;
                         dragOffset = mousePos - selFig->getAbsoluteAnchor();
                     } else {
                         isDrilledIntoGroup = false;
@@ -542,8 +544,20 @@ int main() {
             if (isDragging) {
               isDragging = false;
             }
-            if (isDraggingSubfigure) {
-              isDraggingSubfigure = false;
+            if (isDraggingSubfigure || isDraggingSubfigurePending) {
+              isDraggingSubfigurePending = false;
+              if (isDraggingSubfigure) {
+                isDraggingSubfigure = false;
+                // Snap subfigure to siblings if this is a solid group
+                core::Figure* selFig2 = scene.getSelectedFigure();
+                if (selFig2 && selFig2->parentFigure) {
+                    if (auto* compParent = dynamic_cast<core::CompositeFigure*>(selFig2->parentFigure)) {
+                        if (compParent->isSolidGroup) {
+                            compParent->snapChildToSiblings(selFig2);
+                        }
+                    }
+                }
+              }
             }
             if (isDraggingAnchor) {
               isDraggingAnchor = false;
@@ -779,20 +793,34 @@ int main() {
               scene.getSelectedFigure()->setAnchorKeepAbsolute(
                   newAbsoluteAnchor - scene.getSelectedFigure()->parentOrigin);
             }
-          } else if (isDraggingSubfigure && scene.getSelectedFigure()) {
+          } else if ((isDraggingSubfigure || isDraggingSubfigurePending) && scene.getSelectedFigure()) {
             // Move subfigure in group-local coordinate space
             sf::Vector2f mousePos = viewport.screenToWorld(
                 sf::Vector2f(event.mouseMove.x, event.mouseMove.y));
-            core::Figure* sub = scene.getSelectedFigure();
-            sf::Vector2f targetWorld = mousePos - dragOffset;
-            // targetWorld is the desired absolute anchor of the subfig
-            // local anchor = targetWorld - parent's absolute anchor
-            if (sub->parentFigure) {
-                sf::Vector2f parentAbs = sub->parentFigure->getAbsoluteAnchor();
-                sub->anchor = targetWorld - parentAbs;
-            } else {
-                sub->anchor = targetWorld - sub->parentOrigin;
+            // Promote pending to active only after mouse moves > 5px (drag threshold)
+            if (isDraggingSubfigurePending && !isDraggingSubfigure) {
+                float dx = mousePos.x - subfigureDragStart.x;
+                float dy = mousePos.y - subfigureDragStart.y;
+                if (std::hypot(dx, dy) > 5.f) {
+                    isDraggingSubfigurePending = false;
+                    isDraggingSubfigure = true;
+                } else {
+                    // Not yet dragging — skip movement
+                    // fall through to isDragging check below
+                    goto skip_subfig_drag;
+                }
             }
+            if (isDraggingSubfigure) {
+                core::Figure* sub = scene.getSelectedFigure();
+                sf::Vector2f targetWorld = mousePos - dragOffset;
+                if (sub->parentFigure) {
+                    sf::Vector2f parentAbs = sub->parentFigure->getAbsoluteAnchor();
+                    sub->anchor = targetWorld - parentAbs;
+                } else {
+                    sub->anchor = targetWorld - sub->parentOrigin;
+                }
+            }
+            skip_subfig_drag:;
           } else if (isDragging && scene.getSelectedFigure()) {
             sf::Vector2f mousePos = viewport.screenToWorld(
                 sf::Vector2f(event.mouseMove.x, event.mouseMove.y));

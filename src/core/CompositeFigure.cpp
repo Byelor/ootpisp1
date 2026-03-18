@@ -195,65 +195,70 @@ Figure* CompositeFigure::hitTestChild(sf::Vector2f point) const {
 bool CompositeFigure::snapChildToSiblings(Figure* child) {
     if (children.size() < 2) return true;
 
-    // Get the child's AABB in group-local coords (using anchor as center)
     sf::FloatRect childBounds = child->getBoundingBox();
+    const float kTouchThreshold = 8.f; // pixels (world space)
 
     float bestSnapDist = 1e18f;
-    sf::Vector2f bestSnap = {child->anchor.x, child->anchor.y};
+    sf::Vector2f bestDeltaWorld = {0.f, 0.f};
     bool alreadyTouching = false;
-
-    const float kTouchThreshold = 2.f; // pixels; "already touching" margin
 
     for (const auto& c : children) {
         if (c.figure.get() == child) continue;
         sf::FloatRect sibBounds = c.figure->getBoundingBox();
 
-        // Check if already touching (overlap or edge-touching)
         bool overlapX = childBounds.left < sibBounds.left + sibBounds.width &&
                         childBounds.left + childBounds.width > sibBounds.left;
-        bool overlapY = childBounds.top < sibBounds.top + sibBounds.height &&
-                        childBounds.top + childBounds.height > sibBounds.top;
+        bool overlapY = childBounds.top  < sibBounds.top  + sibBounds.height &&
+                        childBounds.top  + childBounds.height > sibBounds.top;
 
-        float gapRight  = sibBounds.left - (childBounds.left + childBounds.width);
-        float gapLeft   = childBounds.left - (sibBounds.left + sibBounds.width);
-        float gapBottom = sibBounds.top - (childBounds.top + childBounds.height);
-        float gapTop    = childBounds.top - (sibBounds.top + sibBounds.height);
+        // Gap in each direction (positive = child needs to move that way)
+        float gapRight  =  sibBounds.left  - (childBounds.left + childBounds.width);
+        float gapLeft   = -(childBounds.left - (sibBounds.left + sibBounds.width));
+        float gapBottom =  sibBounds.top   - (childBounds.top  + childBounds.height);
+        float gapTop    = -(childBounds.top  - (sibBounds.top  + sibBounds.height));
 
-        if (overlapX && overlapY) { alreadyTouching = true; break; }
-        if (overlapX && (std::abs(gapBottom) < kTouchThreshold || std::abs(gapTop) < kTouchThreshold)) { alreadyTouching = true; break; }
-        if (overlapY && (std::abs(gapRight) < kTouchThreshold || std::abs(gapLeft)  < kTouchThreshold)) { alreadyTouching = true; break; }
+        // Already touching or overlapping
+        if ((overlapX || std::abs(gapRight) < kTouchThreshold || std::abs(gapLeft) < kTouchThreshold) &&
+            (overlapY || std::abs(gapBottom) < kTouchThreshold || std::abs(gapTop) < kTouchThreshold)) {
+            alreadyTouching = true;
+            break;
+        }
 
-        // --- Try 4 snap candidates: snap child to each face of sibling ---
-        // For each candidate, compute the required anchor delta and pick the closest
-        auto trySnap = [&](sf::Vector2f delta) {
-            float dist = std::hypot(delta.x, delta.y);
+        // Try all 4 edge-snap directions and pick the closest
+        auto trySnap = [&](sf::Vector2f worldDelta) {
+            float dist = std::hypot(worldDelta.x, worldDelta.y);
             if (dist < bestSnapDist) {
                 bestSnapDist = dist;
-                bestSnap = {child->anchor.x + delta.x, child->anchor.y + delta.y};
+                bestDeltaWorld = worldDelta;
             }
         };
 
-        // Snap child's right edge to sibling's left edge (only if Y overlaps)
-        if (overlapY) {
-            trySnap({gapRight, 0.f});  // move child right
-            trySnap({-gapLeft, 0.f}); // move child left
+        if (overlapY || std::abs(std::min(gapRight, gapLeft)) < 80.f) {
+            trySnap({gapRight, 0.f});
+            trySnap({-gapLeft, 0.f});
         }
-        // Snap child's bottom edge to sibling's top edge (only if X overlaps)
-        if (overlapX) {
-            trySnap({0.f, gapBottom}); // move child down
-            trySnap({0.f, -gapTop});   // move child up
+        if (overlapX || std::abs(std::min(gapBottom, gapTop)) < 80.f) {
+            trySnap({0.f, gapBottom});
+            trySnap({0.f, -gapTop});
         }
-        // Also try corner snaps (both axes)
-        trySnap({gapRight,  gapBottom});
-        trySnap({gapRight,  -gapTop});
-        trySnap({-gapLeft, gapBottom});
-        trySnap({-gapLeft, -gapTop});
     }
 
     if (alreadyTouching) return true;
+    if (bestSnapDist >= 1e17f) return false;
 
-    // Apply the best snap
-    child->anchor = bestSnap;
+    // Convert world-space delta to parent-local anchor delta
+    // Parent may be rotated/scaled — invert the parent transform
+    sf::Vector2f localDelta = bestDeltaWorld;
+    if (child->parentFigure) {
+        float parentRot = child->parentFigure->getAbsoluteRotation();
+        sf::Vector2f parentScale = child->parentFigure->getAbsoluteScale();
+        float rad = -parentRot * math::DEG_TO_RAD;
+        float rx = localDelta.x * std::cos(rad) - localDelta.y * std::sin(rad);
+        float ry = localDelta.x * std::sin(rad) + localDelta.y * std::cos(rad);
+        localDelta = {rx / parentScale.x, ry / parentScale.y};
+    }
+
+    child->anchor += localDelta;
     return false;
 }
 
