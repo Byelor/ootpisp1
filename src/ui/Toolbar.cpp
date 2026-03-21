@@ -105,20 +105,27 @@ bool Toolbar::render(Tool &currentTool, core::Scene& scene, int& selectedCustomT
       ImGui::SameLine();
       ImGui::Dummy(ImVec2(10, 0));
       ImGui::SameLine();
-      ImGui::Text("Custom:");
-      ImGui::SameLine();
+      ImGui::SetNextItemWidth(150.f);
+      
+      std::string preview = "Custom Figures";
       for (const auto& ct : customTools) {
-          bool isActive = (currentTool == Tool::Custom && selectedCustomToolId == ct.customId);
-          if (isActive) ImGui::PushStyleColor(ImGuiCol_Button, ImGui::GetStyle().Colors[ImGuiCol_ButtonActive]);
-          if (ImGui::Button(ct.name.c_str(), ImVec2(70, 40))) {
-              if (!isActive) {
+          if (currentTool == Tool::Custom && selectedCustomToolId == ct.customId) {
+              preview = ct.name;
+              break;
+          }
+      }
+
+      if (ImGui::BeginCombo("##CustomDropdown", preview.c_str())) {
+          for (const auto& ct : customTools) {
+              bool isSelected = (currentTool == Tool::Custom && selectedCustomToolId == ct.customId);
+              if (ImGui::Selectable(ct.name.c_str(), isSelected)) {
                   currentTool = Tool::Custom;
                   selectedCustomToolId = ct.customId;
                   toolChanged = true;
               }
+              if (isSelected) ImGui::SetItemDefaultFocus();
           }
-          if (isActive) ImGui::PopStyleColor();
-          ImGui::SameLine();
+          ImGui::EndCombo();
       }
   }
 

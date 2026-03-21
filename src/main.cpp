@@ -913,7 +913,7 @@ int main() {
     toolbar.render(currentTool, scene, selectedCustomToolId);
     bool fitRequested = propertiesPanel.render(scene, viewport, compoundSelection, userRegistry, toolbar);
     layerPanel.render(scene);
-    createModal.render(scene);
+    createModal.render(scene, toolbar.customTools, userRegistry);
 
     if (currentTool != ui::Tool::CompoundSelect) {
         compoundSelection.clear();

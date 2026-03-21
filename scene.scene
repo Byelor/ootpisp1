@@ -1,0 +1,187 @@
+figure composite
+name Rectangle
+preset 1
+solid_group 0
+anchor 250 250
+parent_origin 0 0
+rotation 0
+scale 1 1
+fill 255 100 100 255
+edges 4
+  edge 0 width 4 color 100 255 100 255
+  edge 1 width 4 color 100 100 255 255
+  edge 2 width 4 color 255 255 100 255
+  edge 3 width 4 color 255 100 255 255
+vertices_base 4
+  vertex 0 -75 -75
+  vertex 1 75 -75
+  vertex 2 75 75
+  vertex 3 -75 75
+children 0
+end
+
+figure composite
+name Triangle
+preset 2
+solid_group 0
+anchor 500 250
+parent_origin 0 0
+rotation 0
+scale 1 1
+fill 100 255 100 255
+edges 3
+  edge 0 width 4 color 100 100 255 255
+  edge 1 width 4 color 255 255 100 255
+  edge 2 width 4 color 255 100 255 255
+vertices_base 3
+  vertex 0 0 -75
+  vertex 1 75 75
+  vertex 2 -75 75
+children 0
+end
+
+figure composite
+name Hexagon
+preset 3
+solid_group 0
+anchor 750 250
+parent_origin 0 0
+rotation 0
+scale 1 1
+fill 100 100 255 255
+edges 6
+  edge 0 width 4 color 255 255 100 255
+  edge 1 width 4 color 255 100 255 255
+  edge 2 width 4 color 100 255 255 255
+  edge 3 width 4 color 255 100 100 255
+  edge 4 width 4 color 100 255 100 255
+  edge 5 width 4 color 100 100 255 255
+vertices_base 6
+  vertex 0 75 0
+  vertex 1 37.5 64.9519
+  vertex 2 -37.5 64.9519
+  vertex 3 -75 -6.55671e-06
+  vertex 4 -37.5 -64.9519
+  vertex 5 37.5 -64.9519
+children 0
+end
+
+figure composite
+name Rhombus
+preset 4
+solid_group 0
+anchor 250 500
+parent_origin 0 0
+rotation 0
+scale 1 1
+fill 255 255 100 255
+edges 4
+  edge 0 width 4 color 255 100 255 255
+  edge 1 width 4 color 100 255 255 255
+  edge 2 width 4 color 255 100 100 255
+  edge 3 width 4 color 100 255 100 255
+vertices_base 4
+  vertex 0 0 -75
+  vertex 1 75 0
+  vertex 2 0 75
+  vertex 3 -75 0
+children 0
+end
+
+figure composite
+name Trapezoid
+preset 5
+solid_group 0
+anchor 500 500
+parent_origin 0 0
+rotation 0
+scale 1 1
+fill 255 100 255 255
+edges 4
+  edge 0 width 4 color 100 255 255 255
+  edge 1 width 4 color 255 100 100 255
+  edge 2 width 4 color 100 255 100 255
+  edge 3 width 4 color 100 100 255 255
+vertices_base 4
+  vertex 0 -45 -75
+  vertex 1 45 -75
+  vertex 2 75 75
+  vertex 3 -75 75
+children 0
+end
+
+figure composite
+name Circle
+preset 6
+solid_group 0
+anchor 750 500
+parent_origin 0 0
+rotation 0
+scale 1 1
+fill 100 255 255 255
+edges 1
+  edge 0 width 4 color 255 100 100 255
+vertices_base 60
+  vertex 0 75 0
+  vertex 1 74.5891 7.83963
+  vertex 2 73.3611 15.5934
+  vertex 3 71.3292 23.1763
+  vertex 4 68.5159 30.5052
+  vertex 5 64.9519 37.5
+  vertex 6 60.6763 44.0839
+  vertex 7 55.7359 50.1848
+  vertex 8 50.1848 55.7359
+  vertex 9 44.0839 60.6763
+  vertex 10 37.5 64.9519
+  vertex 11 30.5052 68.5159
+  vertex 12 23.1763 71.3292
+  vertex 13 15.5934 73.3611
+  vertex 14 7.83963 74.5891
+  vertex 15 -3.27835e-06 75
+  vertex 16 -7.83964 74.5891
+  vertex 17 -15.5934 73.3611
+  vertex 18 -23.1763 71.3292
+  vertex 19 -30.5053 68.5159
+  vertex 20 -37.5 64.9519
+  vertex 21 -44.0839 60.6763
+  vertex 22 -50.1848 55.7359
+  vertex 23 -55.7359 50.1848
+  vertex 24 -60.6763 44.0839
+  vertex 25 -64.9519 37.5
+  vertex 26 -68.5159 30.5052
+  vertex 27 -71.3292 23.1763
+  vertex 28 -73.3611 15.5934
+  vertex 29 -74.5891 7.83964
+  vertex 30 -75 -6.55671e-06
+  vertex 31 -74.5891 -7.83963
+  vertex 32 -73.3611 -15.5934
+  vertex 33 -71.3292 -23.1763
+  vertex 34 -68.5159 -30.5053
+  vertex 35 -64.9519 -37.5
+  vertex 36 -60.6763 -44.0839
+  vertex 37 -55.7359 -50.1848
+  vertex 38 -50.1848 -55.7359
+  vertex 39 -44.0839 -60.6763
+  vertex 40 -37.5 -64.9519
+  vertex 41 -30.5052 -68.5159
+  vertex 42 -23.1762 -71.3292
+  vertex 43 -15.5934 -73.3611
+  vertex 44 -7.83963 -74.5891
+  vertex 45 8.94366e-07 -75
+  vertex 46 7.83963 -74.5891
+  vertex 47 15.5934 -73.3611
+  vertex 48 23.1763 -71.3292
+  vertex 49 30.5053 -68.5159
+  vertex 50 37.5 -64.9519
+  vertex 51 44.0839 -60.6763
+  vertex 52 50.1848 -55.7359
+  vertex 53 55.7359 -50.1848
+  vertex 54 60.6763 -44.0839
+  vertex 55 64.9519 -37.5
+  vertex 56 68.5159 -30.5052
+  vertex 57 71.3292 -23.1763
+  vertex 58 73.3611 -15.5934
+  vertex 59 74.5891 -7.83961
+children 0
+end
+

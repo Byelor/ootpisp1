@@ -6,11 +6,14 @@
 #include <memory>
 #include <vector>
 
+#include "Toolbar.hpp"
+#include <map>
+
 namespace ui {
 
 class CreateFigureModal {
 public:
-  void render(core::Scene &scene);
+  void render(core::Scene &scene, const std::vector<Toolbar::CustomTool>& customTools, const std::vector<std::unique_ptr<core::Figure>>& userRegistry);
 
   bool isOpen() const { return m_open; }
   void open(sf::Vector2f pos);
@@ -19,7 +22,7 @@ public:
 private:
   void resetDefaults();
   void reinitEdges();
-  std::unique_ptr<core::Figure> createConfiguredFigure();
+  std::unique_ptr<core::Figure> createConfiguredFigure(const std::vector<std::unique_ptr<core::Figure>>& userRegistry);
 
   bool m_open = false;
   sf::Vector2f m_createPos;

@@ -39,7 +39,15 @@ void CreateFigureModal::reinitEdges() {
   }
 }
 
-std::unique_ptr<core::Figure> CreateFigureModal::createConfiguredFigure() {
+std::unique_ptr<core::Figure> CreateFigureModal::createConfiguredFigure(const std::vector<std::unique_ptr<core::Figure>>& userRegistry) {
+  if (m_figureType >= 6) {
+      int customIdx = m_figureType - 6;
+      if (customIdx >= 0 && customIdx < (int)userRegistry.size()) {
+          return userRegistry[customIdx]->clone();
+      }
+      return nullptr;
+  }
+
   std::unique_ptr<core::Figure> fig;
   std::vector<float> lengths;
   for (auto &e : m_edges)
@@ -128,7 +136,7 @@ static const char *getSideName(int figureType, int idx) {
   }
 }
 
-void CreateFigureModal::render(core::Scene &scene) {
+void CreateFigureModal::render(core::Scene &scene, const std::vector<Toolbar::CustomTool>& customTools, const std::vector<std::unique_ptr<core::Figure>>& userRegistry) {
   if (m_open)
     ImGui::OpenPopup("Create Figure##Modal");
 
@@ -140,19 +148,34 @@ void CreateFigureModal::render(core::Scene &scene) {
   if (ImGui::BeginPopupModal("Create Figure##Modal", &m_open,
                              ImGuiWindowFlags_AlwaysAutoResize)) {
     int previousType = m_figureType;
-    if (ImGui::Combo("Figure Type", &m_figureType, kFigureNames,
-                     IM_ARRAYSIZE(kFigureNames))) {
-      if (m_figureType != previousType)
-        reinitEdges();
+    
+    std::vector<const char*> allNames;
+    for (int i = 0; i < 6; ++i) allNames.push_back(kFigureNames[i]);
+    for (const auto& ct : customTools) allNames.push_back(ct.name.c_str());
+
+    if (ImGui::Combo("Figure Type", &m_figureType, allNames.data(),
+                     (int)allNames.size())) {
+      if (m_figureType != previousType) {
+          if (m_figureType < 6) {
+              reinitEdges();
+          } else {
+              m_edges.clear();
+          }
+      }
     }
 
     ImGui::Separator();
-    ImGui::Text("Appearance");
-    ImGui::ColorEdit4("Fill Color", m_fillColor);
+    
+    if (m_figureType >= 6) {
+        ImGui::Text("Custom Figure: %s", allNames[m_figureType]);
+        ImGui::TextDisabled("Geometric adjustments are not available for custom templates.");
+    } else {
+        ImGui::Text("Appearance");
+        ImGui::ColorEdit4("Fill Color", m_fillColor);
 
-    ImGui::Separator();
+        ImGui::Separator();
 
-    if (m_figureType == 5) {
+        if (m_figureType == 5) {
       // Circle: just radius inputs
       ImGui::Text("Geometry");
       ImGui::DragFloat("Radius X", &m_radiusX, 1.f, 5.f, 2000.f);
@@ -208,7 +231,7 @@ void CreateFigureModal::render(core::Scene &scene) {
 
     ImGui::Separator();
     if (ImGui::Button("Create", ImVec2(120, 0))) {
-      auto fig = createConfiguredFigure();
+      auto fig = createConfiguredFigure(userRegistry);
       if (fig) {
         if (scene.customOriginActive) {
           fig->parentOrigin = scene.customOriginPos;
