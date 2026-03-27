@@ -650,15 +650,22 @@ int main() {
               float width = std::abs(dx);
               float height = std::abs(dy);
 
-              // Constrain to square if Shift is held
+              // Constrain if Shift is held
               if (sf::Keyboard::isKeyPressed(sf::Keyboard::LShift) ||
                   sf::Keyboard::isKeyPressed(sf::Keyboard::RShift)) {
-                float maxDim = std::max(width, height);
-                width = maxDim;
-                height = maxDim;
-
-                mousePos.x = createStartPos.x + ((dx >= 0) ? maxDim : -maxDim);
-                mousePos.y = createStartPos.y + ((dy >= 0) ? maxDim : -maxDim);
+                if (currentTool == ui::Tool::Triangle) {
+                  // Equilateral triangle: height = width * sqrt(3)/2
+                  width = std::max(width, height / (std::sqrt(3.f) / 2.f));
+                  height = width * std::sqrt(3.f) / 2.f;
+                  mousePos.x = createStartPos.x + ((dx >= 0) ? width  : -width);
+                  mousePos.y = createStartPos.y + ((dy >= 0) ? height : -height);
+                } else {
+                  float maxDim = std::max(width, height);
+                  width = maxDim;
+                  height = maxDim;
+                  mousePos.x = createStartPos.x + ((dx >= 0) ? maxDim : -maxDim);
+                  mousePos.y = createStartPos.y + ((dy >= 0) ? maxDim : -maxDim);
+                }
               }
 
               // Default size if very small
@@ -1342,15 +1349,21 @@ int main() {
       float width = std::abs(dx);
       float height = std::abs(dy);
 
-      // Constrain preview to square if Shift is held
+      // Constrain preview if Shift is held
       if (sf::Keyboard::isKeyPressed(sf::Keyboard::LShift) ||
           sf::Keyboard::isKeyPressed(sf::Keyboard::RShift)) {
-        float maxDim = std::max(width, height);
-        width = maxDim;
-        height = maxDim;
-
-        mousePos.x = createStartPos.x + ((dx >= 0) ? maxDim : -maxDim);
-        mousePos.y = createStartPos.y + ((dy >= 0) ? maxDim : -maxDim);
+        if (currentTool == ui::Tool::Triangle) {
+          width = std::max(width, height / (std::sqrt(3.f) / 2.f));
+          height = width * std::sqrt(3.f) / 2.f;
+          mousePos.x = createStartPos.x + ((dx >= 0) ? width  : -width);
+          mousePos.y = createStartPos.y + ((dy >= 0) ? height : -height);
+        } else {
+          float maxDim = std::max(width, height);
+          width = maxDim;
+          height = maxDim;
+          mousePos.x = createStartPos.x + ((dx >= 0) ? maxDim : -maxDim);
+          mousePos.y = createStartPos.y + ((dy >= 0) ? maxDim : -maxDim);
+        }
       }
 
       sf::RectangleShape preview;
