@@ -46,6 +46,8 @@ FetchContent_MakeAvailable(ImGui-SFML)
 add_executable(GraphEditor
     src/main.cpp
     src/core/Figure.cpp
+    src/core/PolylineFigure.cpp
+    src/core/Figures.cpp
     src/core/CompositeFigure.cpp
     src/core/Scene.cpp
     src/core/SceneArray.cpp

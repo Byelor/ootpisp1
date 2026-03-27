@@ -2,6 +2,9 @@
 #include <fstream>
 #include <sstream>
 #include <iostream>
+#include <string>
+#include "Figures.hpp"
+#include "PolylineFigure.hpp"
 
 namespace core {
 
@@ -28,10 +31,13 @@ bool SceneSerializer::load(Scene& scene, const std::string& filepath) {
     return true;
 }
 
+static void writePolylineFields(std::ostream& out, const PolylineFigure* fig, int indent);
+static void readPolylineFields(std::istream& in, PolylineFigure* fig);
+
 void SceneSerializer::writeFigure(std::ostream& out, const Figure* fig, int indent) {
+    std::string pad(indent, ' ');
     if (auto cf = dynamic_cast<const CompositeFigure*>(fig)) {
-        std::string pad(indent, ' ');
-        out << pad << "figure composite\n";
+        out << pad << "figure " << cf->typeName() << "\n";
         writeCommonFields(out, cf, indent);
         
         // Children
@@ -44,6 +50,71 @@ void SceneSerializer::writeFigure(std::ostream& out, const Figure* fig, int inde
             out << pad << "  child_end\n";
         }
         out << pad << "end\n";
+    } else if (auto pf = dynamic_cast<const PolylineFigure*>(fig)) {
+        out << pad << "figure " << pf->typeName() << "\n";
+        writePolylineFields(out, pf, indent);
+        out << pad << "end\n";
+    }
+}
+
+static void writePolylineFields(std::ostream& out, const PolylineFigure* fig, int indent) {
+    std::string pad(indent, ' ');
+    out << pad << "name " << fig->figureName << "\n";
+    out << pad << "anchor " << fig->anchor.x << " " << fig->anchor.y << "\n";
+    out << pad << "parent_origin " << fig->parentOrigin.x << " " << fig->parentOrigin.y << "\n";
+    out << pad << "rotation " << fig->rotationAngle << "\n";
+    out << pad << "scale " << fig->scale.x << " " << fig->scale.y << "\n";
+    out << pad << "fill " << (int)fig->fillColor.r << " " << (int)fig->fillColor.g << " " 
+        << (int)fig->fillColor.b << " " << (int)fig->fillColor.a << "\n";
+    out << pad << "edges " << fig->edges.size() << "\n";
+    for (size_t i = 0; i < fig->edges.size(); ++i) {
+        out << pad << "  edge " << i << " width " << fig->edges[i].width << " color " 
+            << (int)fig->edges[i].color.r << " " << (int)fig->edges[i].color.g << " "
+            << (int)fig->edges[i].color.b << " " << (int)fig->edges[i].color.a << "\n";
+    }
+    auto verts = const_cast<PolylineFigure*>(fig)->getVerticesMutable();
+    out << pad << "vertices_base " << verts.size() << "\n";
+    for (size_t i = 0; i < verts.size(); ++i) {
+        out << pad << "  vertex " << i << " " << verts[i].x << " " << verts[i].y << "\n";
+    }
+}
+
+static void readPolylineFields(std::istream& in, PolylineFigure* fig) {
+    std::string prop;
+    while (in >> prop) {
+        if (prop == "end") break;
+        else if (prop == "name") {
+            in >> std::ws;
+            std::getline(in, fig->figureName);
+        }
+        else if (prop == "anchor") in >> fig->anchor.x >> fig->anchor.y;
+        else if (prop == "parent_origin") in >> fig->parentOrigin.x >> fig->parentOrigin.y;
+        else if (prop == "rotation") in >> fig->rotationAngle;
+        else if (prop == "scale") in >> fig->scale.x >> fig->scale.y;
+        else if (prop == "fill") {
+            int r, g, b, a; in >> r >> g >> b >> a;
+            fig->fillColor = sf::Color(r, g, b, a);
+        } else if (prop == "edges") {
+            size_t count; in >> count;
+            fig->edges.resize(count);
+            for (size_t i = 0; i < count; ++i) {
+                std::string dummy; size_t idx; float width; int r, g, b, a;
+                in >> dummy >> idx >> dummy >> width >> dummy >> r >> g >> b >> a;
+                if (idx < count) {
+                    fig->edges[idx].width = width;
+                    fig->edges[idx].color = sf::Color(r, g, b, a);
+                }
+            }
+        } else if (prop == "vertices" || prop == "vertices_base") {
+            size_t count; in >> count;
+            auto& m_verts = fig->getVerticesMutable();
+            m_verts.resize(count);
+            for (size_t i = 0; i < count; ++i) {
+                std::string dummy; size_t idx; float px, py;
+                in >> dummy >> idx >> px >> py;
+                if (idx < count) m_verts[idx] = {px, py};
+            }
+        }
     }
 }
 
@@ -51,26 +122,28 @@ std::unique_ptr<Figure> SceneSerializer::readFigure(std::istream& in) {
     std::string type;
     if (!(in >> type)) return nullptr;
     
-    // Legacy support or uniform CompositeFigure
-    auto fig = std::make_unique<CompositeFigure>();
-    fig->preset = CompositeFigure::Preset::None;
+    std::unique_ptr<Figure> fig;
     
-    // We treat everything as "composite" now. The old type string helps us map if it's an old save file.
-    if (type == "rectangle") fig->preset = CompositeFigure::Preset::Rectangle;
-    else if (type == "triangle") fig->preset = CompositeFigure::Preset::Triangle;
-    else if (type == "hexagon") fig->preset = CompositeFigure::Preset::Hexagon;
-    else if (type == "rhombus") fig->preset = CompositeFigure::Preset::Rhombus;
-    else if (type == "trapezoid") fig->preset = CompositeFigure::Preset::Trapezoid;
-    else if (type == "circle") fig->preset = CompositeFigure::Preset::Circle;
+    if (type == "rectangle") fig = std::make_unique<core::Rectangle>(100.f, 100.f);
+    else if (type == "triangle") fig = std::make_unique<core::Triangle>(100.f, 100.f);
+    else if (type == "hexagon") fig = std::make_unique<core::Hexagon>(100.f, 100.f);
+    else if (type == "rhombus") fig = std::make_unique<core::Rhombus>(100.f, 100.f);
+    else if (type == "trapezoid") fig = std::make_unique<core::Trapezoid>(60.f, 100.f, 100.f);
+    else if (type == "circle") fig = std::make_unique<core::Circle>(50.f, 50.f);
+    else if (type == "polyline") fig = std::make_unique<core::PolylineFigure>();
+    else fig = std::make_unique<core::CompositeFigure>(); // fallback or explicit "composite"
     
-    readCommonFields(in, fig.get());
+    if (auto cf = dynamic_cast<CompositeFigure*>(fig.get())) {
+        readCommonFields(in, cf);
+    } else if (auto pf = dynamic_cast<PolylineFigure*>(fig.get())) {
+        readPolylineFields(in, pf);
+    }
     return fig;
 }
 
 void SceneSerializer::writeCommonFields(std::ostream& out, const CompositeFigure* fig, int indent) {
     std::string pad(indent, ' ');
     out << pad << "name " << fig->figureName << "\n";
-    out << pad << "preset " << static_cast<int>(fig->preset) << "\n";
     out << pad << "solid_group " << (fig->isSolidGroup ? 1 : 0) << "\n";
     out << pad << "anchor " << fig->anchor.x << " " << fig->anchor.y << "\n";
     out << pad << "parent_origin " << fig->parentOrigin.x << " " << fig->parentOrigin.y << "\n";
@@ -109,7 +182,7 @@ void SceneSerializer::readCommonFields(std::istream& in, CompositeFigure* fig) {
         } else if (prop == "preset") {
             int p;
             in >> p;
-            fig->preset = static_cast<CompositeFigure::Preset>(p);
+            // Preset logic removed, ignore this legacy property
         } else if (prop == "anchor") {
             in >> fig->anchor.x >> fig->anchor.y;
         } else if (prop == "parent_origin") {

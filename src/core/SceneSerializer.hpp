@@ -2,6 +2,8 @@
 #include "Scene.hpp"
 #include "CompositeFigure.hpp"
 #include <string>
+#include <iostream>
+#include <memory>
 
 namespace core {
 

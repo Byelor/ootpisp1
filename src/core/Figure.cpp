@@ -1,7 +1,8 @@
 #include "Figure.hpp"
 #include "MathUtils.hpp"
 #include "CompositeFigure.hpp"
-#include "utils/GeometryUtils.hpp"
+#include "GeometryUtils.hpp"
+#include "../utils/GeometryUtils.hpp"
 #include <cmath>
 
 namespace core {
@@ -50,11 +51,11 @@ namespace core {
             absVertices.push_back(getAbsoluteVertex(v));
         }
 
-        return geometry::computeBoundingBox(absVertices);
+        return core::geometry::computeBoundingBox(absVertices);
     }
 
     sf::FloatRect Figure::getLocalBoundingBox() const {
-        return geometry::computeBoundingBox(getVertices());
+        return core::geometry::computeBoundingBox(getVertices());
     }
 
     bool Figure::contains(sf::Vector2f point) const {
@@ -64,7 +65,7 @@ namespace core {
         for (const auto& v : vertices) {
             absVertices.push_back(getAbsoluteVertex(v));
         }
-        return geometry::pointInPolygon(point, absVertices);
+        return core::geometry::pointInPolygon(point, absVertices);
     }
 
     void Figure::resetAnchor() {
@@ -129,7 +130,7 @@ namespace core {
     }
 
     void Figure::applyGenericSideLengths(const std::vector<float>& lengths) {
-        geometry::relaxEdges(m_vertices, lengths, 1000, 0.5f);
+        core::geometry::relaxEdges(m_vertices, lengths, 1000, 0.5f);
     }
 
     void Figure::draw(sf::RenderTarget& target) const {
@@ -151,32 +152,26 @@ namespace core {
 
         if (edges.empty()) return;
 
-        //  
-        std::vector<sf::Vector2f> V(n);
-        for (size_t i = 0; i < n; ++i) {
-            V[i] = getAbsoluteVertex(verticesRelative[i]);
-        }
+        std::vector<sf::Vector2f> outlinePts(n);
+        std::vector<sf::Color> outlineCols(n);
+        std::vector<float> outlineThicks(n);
 
-        //      
         for (size_t i = 0; i < n; ++i) {
-            size_t next = (i + 1) % n;
+            outlinePts[i] = getAbsoluteVertex(verticesRelative[i]);
             size_t eIdx = i < edges.size() ? i : 0;
-
-            if (edges[eIdx].width <= 0.001f) continue;
-
-            sf::Vector2f dir = math::normalize(V[next] - V[i]);
-            sf::Vector2f normal = math::perpendicular(dir);
-            float halfWidth = edges[eIdx].width / 2.f;
-
-            sf::ConvexShape edgeQuad(4);
-            edgeQuad.setPoint(0, V[i] - normal * halfWidth);
-            edgeQuad.setPoint(1, V[i] + normal * halfWidth);
-            edgeQuad.setPoint(2, V[next] + normal * halfWidth);
-            edgeQuad.setPoint(3, V[next] - normal * halfWidth);
-            edgeQuad.setFillColor(edges[eIdx].color);
-
-            target.draw(edgeQuad);
+            outlineCols[i] = edges[eIdx].color;
+            // Scale thickness correctly
+            float currentScale = (std::abs(scale.x) + std::abs(scale.y)) / 2.f; 
+            if (parentFigure) {
+                sf::Vector2f absScale = getAbsoluteScale();
+                currentScale = (std::abs(absScale.x) + std::abs(absScale.y)) / 2.f;
+            }
+            outlineThicks[i] = edges[eIdx].width * currentScale;
         }
+
+        bool isClosed = n > 2;
+        sf::VertexArray outlineArr = core::geometry::generateThickPolyline(outlinePts, outlineCols, outlineThicks, isClosed);
+        target.draw(outlineArr);
     }
 
     void Figure::move(sf::Vector2f delta) {

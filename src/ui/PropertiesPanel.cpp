@@ -1,6 +1,7 @@
 #include "PropertiesPanel.hpp"
 #include "core/Scene.hpp"
 #include "core/CompositeFigure.hpp"
+#include "core/PolylineFigure.hpp"
 #include "core/MathUtils.hpp"
 #include <algorithm>
 #include <imgui.h>
@@ -295,11 +296,11 @@ bool PropertiesPanel::render(core::Scene &scene, core::Viewport &viewport, std::
             selectedFigure->edges[i].width = width;
           }
 
-          if (auto cf = dynamic_cast<core::CompositeFigure*>(selectedFigure)) {
-              if (cf->getVerticesMutable().size() > i + 1) { 
-                  float angle = cf->getEdgeAngle(i);
+          if (auto pf = dynamic_cast<core::PolylineFigure*>(selectedFigure)) {
+              if (pf->getVerticesMutable().size() > i + 1) { 
+                  float angle = pf->getEdgeAngle(i);
                   if (ImGui::DragFloat("Angle", &angle, 1.f, -360.f, 360.f)) {
-                      cf->setEdgeAngle(i, angle);
+                      pf->setEdgeAngle(i, angle);
                   }
               }
           }
@@ -356,7 +357,6 @@ bool PropertiesPanel::render(core::Scene &scene, core::Viewport &viewport, std::
       if (ImGui::Button("Group Selected", ImVec2(-1, 0))) {
           auto newCompound = std::make_unique<core::CompositeFigure>();
           newCompound->figureName = "Grouped Figure";
-          newCompound->preset = core::CompositeFigure::Preset::None;
           
           sf::Vector2f center(0.f, 0.f);
           for (auto* fig : compoundSelection) {
@@ -485,6 +485,11 @@ bool PropertiesPanel::render(core::Scene &scene, core::Viewport &viewport, std::
                       extracted->scale.y *= cf->scale.y;
                       scene.addFigure(std::move(extracted));
                   }
+              }
+              ImGui::SameLine();
+              if (ImGui::Button("Delete")) {
+                  cf->extractChild(cf->children[i].figure.get());
+                  // Extracted unique_ptr drops out of scope = deleted
               }
               ImGui::PopID();
               ImGui::Spacing();

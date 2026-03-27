@@ -1,4 +1,6 @@
 #include "core/CompositeFigure.hpp"
+#include "core/Figures.hpp"
+#include "core/PolylineFigure.hpp"
 #include "core/Scene.hpp"
 #include "core/Viewport.hpp"
 #include "core/MathUtils.hpp"
@@ -123,19 +125,31 @@ int main() {
     height = std::max(height, 50.f);
 
     std::unique_ptr<core::Figure> fig;
-    if (tool == ui::Tool::Rectangle)
-      fig = core::CompositeFigure::createRectangle(width, height);
-    else if (tool == ui::Tool::Triangle)
-      fig = core::CompositeFigure::createTriangle(width, height);
-    else if (tool == ui::Tool::Hexagon)
-      fig = core::CompositeFigure::createHexagon(width, height);
-    else if (tool == ui::Tool::Rhombus)
-      fig = core::CompositeFigure::createRhombus(width, height);
-    else if (tool == ui::Tool::Trapezoid)
-      fig = core::CompositeFigure::createTrapezoid(width * 0.6f, width, height);
-    else if (tool == ui::Tool::Circle)
-      fig = core::CompositeFigure::createCircle(width / 2.f, height / 2.f);
-    else if (tool == ui::Tool::Custom && selectedCustomToolId >= 0 && selectedCustomToolId < userRegistry.size()) {
+    if (tool == ui::Tool::Rectangle) {
+      fig = std::make_unique<core::Rectangle>(100.f, 100.f);
+      fig->scale = sf::Vector2f(width / 100.f, height / 100.f);
+      fig->applyScale();
+    } else if (tool == ui::Tool::Triangle) {
+      fig = std::make_unique<core::Triangle>(100.f, 100.f);
+      fig->scale = sf::Vector2f(width / 100.f, height / 100.f);
+      fig->applyScale();
+    } else if (tool == ui::Tool::Hexagon) {
+      fig = std::make_unique<core::Hexagon>(100.f, 100.f);
+      fig->scale = sf::Vector2f(width / 100.f, height / 100.f);
+      fig->applyScale();
+    } else if (tool == ui::Tool::Rhombus) {
+      fig = std::make_unique<core::Rhombus>(100.f, 100.f);
+      fig->scale = sf::Vector2f(width / 100.f, height / 100.f);
+      fig->applyScale();
+    } else if (tool == ui::Tool::Trapezoid) {
+      fig = std::make_unique<core::Trapezoid>(60.f, 100.f, 100.f);
+      fig->scale = sf::Vector2f(width / 100.f, height / 100.f);
+      fig->applyScale();
+    } else if (tool == ui::Tool::Circle) {
+      fig = std::make_unique<core::Circle>(50.f, 50.f);
+      fig->scale = sf::Vector2f(width / 100.f, height / 100.f);
+      fig->applyScale();
+    } else if (tool == ui::Tool::Custom && selectedCustomToolId >= 0 && selectedCustomToolId < userRegistry.size()) {
         fig = userRegistry[selectedCustomToolId]->clone();
         sf::FloatRect bounds = fig->getLocalBoundingBox();
         if (bounds.width > 0 && bounds.height > 0) {
@@ -292,8 +306,9 @@ int main() {
             panStartOrigin = viewport.worldOrigin;
           } else if (event.mouseButton.button == sf::Mouse::Right) {
             if (currentTool == ui::Tool::Polyline && currentPolylineVertices.size() > 1) {
-                auto fig = std::make_unique<core::CompositeFigure>(currentPolylineVertices);
-                fig->fillColor = sf::Color(150, 150, 150);
+                // Finish Polyline
+                auto fig = std::make_unique<core::PolylineFigure>();
+                fig->fillColor = sf::Color(150, 150, 150, 100);
                 fig->figureName = "Custom Polyline";
                 sf::Vector2f minP = currentPolylineVertices[0], maxP = currentPolylineVertices[0];
                 for(auto& v : currentPolylineVertices) {
@@ -302,9 +317,14 @@ int main() {
                 }
                 sf::Vector2f center = (minP + maxP) / 2.f;
                 fig->anchor = center;
-                for (auto& v : fig->getVerticesMutable()) {
-                    v -= center;
+                std::vector<sf::Vector2f> localVerts;
+                for (auto& v : currentPolylineVertices) {
+                    localVerts.push_back(v - center);
                 }
+                fig->setVertices(localVerts);
+                fig->edges.resize(localVerts.size());
+                for (auto& e : fig->edges) { e.width = 2.f; e.color = sf::Color::Black; }
+                
                 scene.addFigure(std::move(fig));
                 currentPolylineVertices.clear();
                 currentTool = ui::Tool::Select;
@@ -498,13 +518,55 @@ int main() {
                 }
               }
             } else if (currentTool == ui::Tool::Polyline) {
+               bool doubleClicked = false;
+               if (wasClicked && clickClock.getElapsedTime().asSeconds() < 0.3f) {
+                   doubleClicked = true;
+                   wasClicked = false;
+               } else {
+                   wasClicked = true;
+                   clickClock.restart();
+               }
+
                sf::Vector2f snapPos = mousePos;
-               if (!currentPolylineVertices.empty() && 
-                   (sf::Keyboard::isKeyPressed(sf::Keyboard::LShift) || sf::Keyboard::isKeyPressed(sf::Keyboard::RShift))) {
-                   sf::Vector2f lastPos = currentPolylineVertices.back();
-                   sf::Vector2f delta = mousePos - lastPos;
-                   if (std::abs(delta.x) > std::abs(delta.y)) snapPos = {mousePos.x, lastPos.y};
-                   else snapPos = {lastPos.x, mousePos.y};
+               if (!currentPolylineVertices.empty()) {
+                   if (sf::Keyboard::isKeyPressed(sf::Keyboard::LShift) || sf::Keyboard::isKeyPressed(sf::Keyboard::RShift)) {
+                       sf::Vector2f lastPos = currentPolylineVertices.back();
+                       sf::Vector2f delta = mousePos - lastPos;
+                       if (std::abs(delta.x) > std::abs(delta.y)) snapPos = {mousePos.x, lastPos.y};
+                       else snapPos = {lastPos.x, mousePos.y};
+                   }
+                   
+                   // Auto close if clicking near first vertex
+                   if (currentPolylineVertices.size() > 2) {
+                       float dist = std::hypot(snapPos.x - currentPolylineVertices.front().x,
+                                               snapPos.y - currentPolylineVertices.front().y);
+                       if (dist < 10.f / viewport.zoom || doubleClicked) {
+                           // Finish Polyline
+                           auto fig = std::make_unique<core::PolylineFigure>();
+                           fig->fillColor = sf::Color(150, 150, 150, 200);
+                           fig->figureName = "Polygon";
+                           sf::Vector2f minP = currentPolylineVertices[0], maxP = currentPolylineVertices[0];
+                           for(auto& v : currentPolylineVertices) {
+                               minP.x = std::min(minP.x, v.x); minP.y = std::min(minP.y, v.y);
+                               maxP.x = std::max(maxP.x, v.x); maxP.y = std::max(maxP.y, v.y);
+                           }
+                           sf::Vector2f center = (minP + maxP) / 2.f;
+                           fig->anchor = center;
+                           std::vector<sf::Vector2f> localVerts;
+                           for (auto& v : currentPolylineVertices) {
+                               localVerts.push_back(v - center);
+                           }
+                           fig->setVertices(localVerts);
+                           fig->edges.resize(localVerts.size());
+                           for (auto& e : fig->edges) { e.width = 2.f; e.color = sf::Color::Black; }
+                           
+                           scene.setSelectedFigure(fig.get());
+                           scene.addFigure(std::move(fig));
+                           currentPolylineVertices.clear();
+                           currentTool = ui::Tool::Select;
+                           continue;
+                       }
+                   }
                }
                currentPolylineVertices.push_back(snapPos);
             } else if (currentTool == ui::Tool::CompoundSelect) {
@@ -1107,6 +1169,30 @@ int main() {
             rect.setOutlineThickness(1.f / viewport.zoom);
             window.draw(rect);
         }
+    }
+    
+    if (currentTool == ui::Tool::CompoundSelect && !compoundSelection.empty()) {
+        ImGui::SetNextWindowPos(ImVec2(window.getSize().x - 250, 60), ImGuiCond_FirstUseEver);
+        ImGui::Begin("Compound Merge", nullptr, ImGuiWindowFlags_AlwaysAutoResize);
+        ImGui::Text("Selected: %zu figures", compoundSelection.size());
+        static char compoundName[128] = "CustomGroup";
+        ImGui::InputText("Name", compoundName, sizeof(compoundName));
+        if (ImGui::Button("Merge into Compound")) {
+            auto comp = core::CompositeFigure::mergeFromScene(compoundSelection, scene, compoundName);
+            if (comp) {
+                scene.addFigure(std::move(comp));
+                compoundSelection.clear();
+                currentTool = ui::Tool::Select;
+                
+                // Add to registry for Custom tool
+                ui::Toolbar::CustomTool ct;
+                ct.name = compoundName;
+                ct.customId = userRegistry.size();
+                userRegistry.push_back(scene.getFigure(scene.figureCount() - 1)->clone());
+                toolbar.customTools.push_back(ct);
+            }
+        }
+        ImGui::End();
     }
     
     if (currentTool == ui::Tool::Polyline && !currentPolylineVertices.empty()) {
