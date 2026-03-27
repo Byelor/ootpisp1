@@ -391,54 +391,6 @@ bool PropertiesPanel::render(core::Scene &scene, core::Viewport &viewport, std::
           if (ImGui::IsItemHovered()) {
               ImGui::SetTooltip("Subfigures snap to each other —\ncannot be pulled apart.");
           }
-          
-          if (ImGui::Button("Save as Toolbar Template", ImVec2(-1, 0))) {
-              ImGui::OpenPopup("Save Template");
-          }
-          
-          if (ImGui::BeginPopupModal("Save Template", nullptr, ImGuiWindowFlags_AlwaysAutoResize)) {
-              static char tmplName[128] = "My Custom Figure";
-              ImGui::InputText("Name", tmplName, sizeof(tmplName));
-              if (ImGui::Button("Save", ImVec2(120, 0))) {
-                  // To duplicate, we use a simple JSON/SceneSerializer trick or just clone if we implement it.
-                  // For now, let's assume we can implement clone() in CompositeFigure.
-                  auto copy = cf->clone();
-                  if (auto comp = dynamic_cast<core::CompositeFigure*>(copy.get())) {
-                      comp->figureName = tmplName;
-                  }
-                  userRegistry.push_back(std::move(copy));
-                  ui::Toolbar::CustomTool ct;
-                  ct.name = tmplName;
-                  ct.customId = userRegistry.size() - 1;
-                  toolbar.customTools.push_back(ct);
-                  ImGui::CloseCurrentPopup();
-              }
-              ImGui::SameLine();
-              if (ImGui::Button("Cancel", ImVec2(120, 0))) {
-                  ImGui::CloseCurrentPopup();
-              }
-              ImGui::EndPopup();
-          }
-
-          if (ImGui::Button("Ungroup All", ImVec2(-1, 0))) {
-              for (auto& child : cf->children) {
-                  auto extracted = std::move(child.figure);
-                  sf::Vector2f scaledOffset(extracted->anchor.x * cf->scale.x, extracted->anchor.y * cf->scale.y);
-                  sf::Vector2f absOffset = core::math::rotate(scaledOffset, cf->rotationAngle * core::math::DEG_TO_RAD);
-                  extracted->parentOrigin = cf->parentOrigin + cf->anchor + absOffset;
-                  extracted->rotationAngle += cf->rotationAngle + extracted->rotationAngle;
-                  extracted->scale.x *= cf->scale.x;
-                  extracted->scale.y *= cf->scale.y;
-                  scene.addFigure(std::move(extracted));
-              }
-              cf->children.clear();
-              scene.removeFigure(cf);
-              scene.setSelectedFigure(nullptr);
-              ImGui::End();
-              return fitRequested;
-          }
-          
-          ImGui::Separator();
           ImGui::Text("Global Outline Properties");
           static float globalOutlineWidth = 1.0f;
           if (ImGui::DragFloat("Outline Width##Global", &globalOutlineWidth, 0.5f, 0.f, 100.f)) {
@@ -479,8 +431,9 @@ bool PropertiesPanel::render(core::Scene &scene, core::Viewport &viewport, std::
                   if (extracted) {
                       sf::Vector2f scaledOffset(extracted->anchor.x * cf->scale.x, extracted->anchor.y * cf->scale.y);
                       sf::Vector2f absOffset = core::math::rotate(scaledOffset, cf->rotationAngle * core::math::DEG_TO_RAD);
-                      extracted->parentOrigin = cf->parentOrigin + cf->anchor + absOffset;
-                      extracted->rotationAngle += cf->rotationAngle + extracted->rotationAngle;
+                      extracted->parentOrigin = sf::Vector2f(0.f, 0.f);
+                      extracted->anchor = cf->parentOrigin + cf->anchor + absOffset;
+                      extracted->rotationAngle += cf->rotationAngle;
                       extracted->scale.x *= cf->scale.x;
                       extracted->scale.y *= cf->scale.y;
                       scene.addFigure(std::move(extracted));
