@@ -46,6 +46,9 @@ public:
   // Get the unscaled local bounding box based on relative vertices
   sf::FloatRect getLocalBoundingBox() const;
 
+  // Get the precise outer stroke points used for bounds calculation
+  std::vector<sf::Vector2f> getStrokeOuterPoints(bool absolute) const;
+
   // Get relative vertices (offset from anchor)
   virtual const std::vector<sf::Vector2f> &getVertices() const {
     return m_vertices;
