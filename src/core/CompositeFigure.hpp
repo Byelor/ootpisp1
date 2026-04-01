@@ -45,6 +45,8 @@ public:
     bool contains(sf::Vector2f point) const override;
     
     // Bounding box override to account for children
+    sf::FloatRect getBoundingBox() const override;
+    sf::FloatRect getLocalBoundingBox() const override;
     const std::vector<sf::Vector2f>& getVertices() const override;
 
     std::string typeName() const override;

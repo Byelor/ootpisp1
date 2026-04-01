@@ -203,20 +203,78 @@ bool CompositeFigure::snapChildToSiblings(Figure* child) {
 }
 
 const std::vector<sf::Vector2f>& CompositeFigure::getVertices() const {
-    if (children.empty()) return m_vertices;
+    return m_vertices;
+}
 
-    m_cachedVerts = m_vertices;
+sf::FloatRect CompositeFigure::getBoundingBox() const {
+    sf::FloatRect bounds;
+    bool first = true;
+
+    if (!m_vertices.empty()) {
+        bounds = Figure::getBoundingBox();
+        first = false;
+    }
+
     for (const auto& child : children) {
-        const auto& cverts = child.figure->getVertices();
-        for (const auto& cv : cverts) {
-            sf::Vector2f cv_scaled(cv.x * child.figure->scale.x, cv.y * child.figure->scale.y);
-            sf::Vector2f cv_rot = math::rotate(cv_scaled, child.figure->rotationAngle * math::DEG_TO_RAD);
-            
-            sf::Vector2f offset = child.figure->anchor + cv_rot;
-            m_cachedVerts.push_back(offset);
+        sf::FloatRect childBounds = child.figure->getBoundingBox();
+        if (first) {
+            bounds = childBounds;
+            first = false;
+        } else {
+            float left = std::min(bounds.left, childBounds.left);
+            float top = std::min(bounds.top, childBounds.top);
+            float right = std::max(bounds.left + bounds.width, childBounds.left + childBounds.width);
+            float bottom = std::max(bounds.top + bounds.height, childBounds.top + childBounds.height);
+            bounds = sf::FloatRect(left, top, right - left, bottom - top);
         }
     }
-    return m_cachedVerts; // Returns a combined set of ALL vertices for hit test bounding boxes
+    return bounds;
+}
+
+sf::FloatRect CompositeFigure::getLocalBoundingBox() const {
+    // We want the bounding box in the local coordinate space of THIS figure.
+    // That is, relative to our anchor, with our rotation and scale INVERTED.
+    
+    sf::FloatRect absoluteBounds = getBoundingBox();
+    
+    sf::Vector2f absAnchor = getAbsoluteAnchor();
+    float absRot = getAbsoluteRotation();
+    sf::Vector2f absScale = getAbsoluteScale();
+    
+    auto toLocal = [&](sf::Vector2f worldP) -> sf::Vector2f {
+        sf::Vector2f rel = worldP - absAnchor;
+        // Unrotate
+        float rad = -absRot * math::DEG_TO_RAD;
+        sf::Vector2f unrot(rel.x * std::cos(rad) - rel.y * std::sin(rad),
+                            rel.x * std::sin(rad) + rel.y * std::cos(rad));
+        // Unscale
+        return { (absScale.x != 0.f) ? unrot.x / absScale.x : 0.f,
+                 (absScale.y != 0.f) ? unrot.y / absScale.y : 0.f };
+    };
+    
+    // Project the 4 corners of the absolute bounding box into local space
+    sf::Vector2f corners[4] = {
+        {absoluteBounds.left, absoluteBounds.top},
+        {absoluteBounds.left + absoluteBounds.width, absoluteBounds.top},
+        {absoluteBounds.left, absoluteBounds.top + absoluteBounds.height},
+        {absoluteBounds.left + absoluteBounds.width, absoluteBounds.top + absoluteBounds.height}
+    };
+    
+    float minX = 0, minY = 0, maxX = 0, maxY = 0;
+    for (int i = 0; i < 4; ++i) {
+        sf::Vector2f lp = toLocal(corners[i]);
+        if (i == 0) {
+            minX = maxX = lp.x;
+            minY = maxY = lp.y;
+        } else {
+            minX = std::min(minX, lp.x);
+            minY = std::min(minY, lp.y);
+            maxX = std::max(maxX, lp.x);
+            maxY = std::max(maxY, lp.y);
+        }
+    }
+    
+    return sf::FloatRect(minX, minY, maxX - minX, maxY - minY);
 }
 
 std::string CompositeFigure::typeName() const {

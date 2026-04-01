@@ -66,8 +66,8 @@ public:
     bool hasUniformEdge() const override { return true; }
     void draw(sf::RenderTarget& target) const override;
     
-    sf::FloatRect getBoundingBox() const;
-    sf::FloatRect getLocalBoundingBox() const;
+    sf::FloatRect getBoundingBox() const override;
+    sf::FloatRect getLocalBoundingBox() const override;
 
     float getRadiusX() const { return m_radiusX; }
     float getRadiusY() const { return m_radiusY; }

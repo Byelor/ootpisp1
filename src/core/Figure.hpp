@@ -47,10 +47,10 @@ public:
   std::vector<Edge> edges;
 
   // Get the bounding box of the figure based on its absolute vertices
-  sf::FloatRect getBoundingBox() const;
+  virtual sf::FloatRect getBoundingBox() const;
 
   // Get the unscaled local bounding box based on relative vertices
-  sf::FloatRect getLocalBoundingBox() const;
+  virtual sf::FloatRect getLocalBoundingBox() const;
 
   // Get the precise outer stroke points used for bounds calculation
   std::vector<sf::Vector2f> getStrokeOuterPoints(bool absolute) const;
