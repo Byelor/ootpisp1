@@ -1,18 +1,18 @@
 #pragma once
 #include "Figure.hpp"
-#include <array>
 #include <cstddef>
 #include <memory>
+#include <vector>
 
 namespace core {
 
 constexpr int SCENE_MAX_FIGURES = 1000;
 
-/// Массив фигур с фиксированной ёмкостью.
+/// Массив фигур с ограничением на максимальное количество.
 /// Хранит raw-указатели (владение остаётся за unique_ptr в SceneArray).
 class SceneArray {
 public:
-    SceneArray() = default;
+    SceneArray() { m_data.reserve(SCENE_MAX_FIGURES); }
 
     /// Добавить фигуру в конец. Возвращает false если массив полон.
     bool add(std::unique_ptr<Figure> fig);
@@ -31,7 +31,7 @@ public:
     bool moveItem(int fromIdx, int toIdx);
 
     /// Количество фигур
-    int count() const { return m_count; }
+    int count() const { return static_cast<int>(m_data.size()); }
 
     /// Доступ по индексу
     Figure* get(int idx) const;
@@ -46,11 +46,7 @@ public:
     void clear();
 
 private:
-    std::array<std::unique_ptr<Figure>, SCENE_MAX_FIGURES> m_data;
-    int m_count = 0;
-
-    /// Сдвинуть элементы влево начиная с позиции pos
-    void shiftLeft(int pos);
+    std::vector<std::unique_ptr<Figure>> m_data;
 };
 
 } // namespace core
