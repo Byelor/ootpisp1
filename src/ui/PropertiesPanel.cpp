@@ -92,7 +92,9 @@ bool PropertiesPanel::render(core::Scene &scene, core::Viewport &viewport, std::
     return fitRequested;
   }
 
-  ImGui::Text("FIGURE PROPERTIES");
+  char header[64];
+  std::snprintf(header, sizeof(header), "FIGURE PROPERTIES [ID: %llu]", static_cast<unsigned long long>(selectedFigure->id));
+  ImGui::Text("%s", header);
   ImGui::Separator();
   ImGui::Spacing();
 
