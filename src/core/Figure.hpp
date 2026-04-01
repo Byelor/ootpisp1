@@ -1,6 +1,9 @@
 #pragma once
 
 #include <SFML/Graphics.hpp>
+#include <cstdint>
+#include <memory>
+#include <string>
 #include <vector>
 
 namespace core {
@@ -17,6 +20,9 @@ public:
   virtual ~Figure() = default;
   virtual std::unique_ptr<Figure> clone() const = 0;
   virtual std::string typeName() const = 0;
+
+  // Stable unique identifier (assigned by Scene). 0 means "unassigned".
+  std::uint64_t id = 0;
 
   // Anchor point (relative to parentOrigin)
   sf::Vector2f anchor{0.f, 0.f};

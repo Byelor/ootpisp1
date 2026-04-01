@@ -115,7 +115,7 @@ void LayerPanel::renderFigureNode(core::Scene& scene, core::Figure* fig, int ind
     }
 
     std::string typeName = fig->typeName();
-    std::string label = typeName + "##" + std::to_string(reinterpret_cast<uintptr_t>(fig));
+    std::string label = typeName + "##" + std::to_string(static_cast<unsigned long long>(fig->id));
 
     bool nodeOpen = ImGui::TreeNodeEx(label.c_str(), flags);
 

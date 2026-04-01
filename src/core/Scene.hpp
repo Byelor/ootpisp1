@@ -3,6 +3,7 @@
 #include "Figure.hpp"
 #include <memory>
 #include "SceneArray.hpp"
+#include <cstdint>
 
 namespace core {
 
@@ -37,8 +38,14 @@ public:
   void resetCustomOrigin();
 
 private:
+  void assignIdsRecursive(Figure* fig);
+  void observeExistingIdsRecursive(const Figure* fig);
+
   SceneArray m_figures;
   Figure *m_selectedFigure = nullptr;
+
+  // Next id to assign for newly added figures.
+  std::uint64_t m_nextId = 1;
 };
 
 } // namespace core

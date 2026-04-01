@@ -66,6 +66,7 @@ void SceneSerializer::writeFigure(std::ostream& out, const Figure* fig, int inde
 
 static void writePolylineFields(std::ostream& out, const PolylineFigure* fig, int indent) {
     std::string pad(indent, ' ');
+    out << pad << "id " << fig->id << "\n";
     out << pad << "name " << fig->figureName << "\n";
     out << pad << "anchor " << fig->anchor.x << " " << fig->anchor.y << "\n";
     out << pad << "parent_origin " << fig->parentOrigin.x << " " << fig->parentOrigin.y << "\n";
@@ -90,6 +91,7 @@ static void readPolylineFields(std::istream& in, PolylineFigure* fig) {
     std::string prop;
     while (in >> prop) {
         if (prop == "end") break;
+        else if (prop == "id") in >> fig->id;
         else if (prop == "name") {
             in >> std::ws;
             std::getline(in, fig->figureName);
@@ -152,6 +154,7 @@ std::unique_ptr<Figure> SceneSerializer::readFigure(std::istream& in) {
 
 void SceneSerializer::writeCommonFields(std::ostream& out, const CompositeFigure* fig, int indent) {
     std::string pad(indent, ' ');
+    out << pad << "id " << fig->id << "\n";
     out << pad << "name " << fig->figureName << "\n";
     out << pad << "solid_group " << (fig->isSolidGroup ? 1 : 0) << "\n";
     out << pad << "anchor " << fig->anchor.x << " " << fig->anchor.y << "\n";
@@ -183,6 +186,8 @@ void SceneSerializer::readCommonFields(std::istream& in, CompositeFigure* fig) {
     while (in >> prop) {
         if (prop == "end") {
             break;
+        } else if (prop == "id") {
+            in >> fig->id;
         } else if (prop == "name") {
             std::string name;
             in >> std::ws;
@@ -267,6 +272,7 @@ void SceneSerializer::readCommonFields(std::istream& in, CompositeFigure* fig) {
 
 static void writeCircleFields(std::ostream& out, const Circle* fig, int indent) {
     std::string pad(indent, ' ');
+    out << pad << "id " << fig->id << "\n";
     out << pad << "name " << fig->figureName << "\n";
     out << pad << "anchor " << fig->anchor.x << " " << fig->anchor.y << "\n";
     out << pad << "parent_origin " << fig->parentOrigin.x << " " << fig->parentOrigin.y << "\n";
@@ -288,6 +294,7 @@ static void readCircleFields(std::istream& in, Circle* fig) {
     fig->edges.resize(1); // Circle always has 1 virtual edge for thickness
     while (in >> prop) {
         if (prop == "end") break;
+        else if (prop == "id") in >> fig->id;
         else if (prop == "name") {
             in >> std::ws;
             std::getline(in, fig->figureName);

@@ -229,6 +229,8 @@ std::unique_ptr<Figure> Trapezoid::clone() const {
 // ─── Circle 
 Circle::Circle(float radiusX, float radiusY) : m_radiusX(radiusX), m_radiusY(radiusY) {
     figureName = "Circle";
+    // Circle uses one virtual edge entry for outline style.
+    edges.resize(1);
 }
 
 std::unique_ptr<Figure> Circle::clone() const {

@@ -1,9 +1,38 @@
 #include "Scene.hpp"
+#include "CompositeFigure.hpp"
 #include "utils/GeometryUtils.hpp"
 
 namespace core {
 
+void Scene::observeExistingIdsRecursive(const Figure* fig) {
+  if (!fig) return;
+  if (fig->id != 0) {
+    m_nextId = std::max(m_nextId, fig->id + 1);
+  }
+  if (auto cf = dynamic_cast<const CompositeFigure*>(fig)) {
+    for (const auto& child : cf->children) {
+      observeExistingIdsRecursive(child.figure.get());
+    }
+  }
+}
+
+void Scene::assignIdsRecursive(Figure* fig) {
+  if (!fig) return;
+  if (fig->id == 0) {
+    fig->id = m_nextId++;
+  } else {
+    m_nextId = std::max(m_nextId, fig->id + 1);
+  }
+  if (auto cf = dynamic_cast<CompositeFigure*>(fig)) {
+    for (auto& child : cf->children) {
+      assignIdsRecursive(child.figure.get());
+    }
+  }
+}
+
 void Scene::addFigure(std::unique_ptr<Figure> fig) {
+  observeExistingIdsRecursive(fig.get());
+  assignIdsRecursive(fig.get());
   m_figures.add(std::move(fig));
 }
 
@@ -16,6 +45,8 @@ bool Scene::removeFigure(Figure *fig) {
 }
 
 bool Scene::insertFigure(std::unique_ptr<Figure> fig, int index) {
+  observeExistingIdsRecursive(fig.get());
+  assignIdsRecursive(fig.get());
   return m_figures.insert(std::move(fig), index);
 }
 
