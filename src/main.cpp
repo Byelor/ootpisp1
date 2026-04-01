@@ -1034,14 +1034,27 @@ int main() {
         ImGui::SetNextWindowPos(ImVec2(window.getSize().x - 320, 60), ImGuiCond_FirstUseEver);
         ImGui::Begin("Polyline Input", nullptr, ImGuiWindowFlags_AlwaysAutoResize);
         ImGui::Text("Mode: click points or type values");
+        if (scene.customOriginActive) {
+            ImGui::TextDisabled("Custom origin: (%.1f, %.1f)", scene.customOriginPos.x, scene.customOriginPos.y);
+        }
         ImGui::Separator();
         ImGui::Text("Vertices: %zu", currentPolylineVertices.size());
 
         if (currentPolylineVertices.empty()) {
-            ImGui::InputFloat2("Start X,Y", polylineStartInput);
+            static bool polylineStartRelativeToCustomOrigin = true;
+            if (!scene.customOriginActive) polylineStartRelativeToCustomOrigin = false;
+            if (scene.customOriginActive) {
+                ImGui::Checkbox("Start input relative to custom origin", &polylineStartRelativeToCustomOrigin);
+            }
+
+            ImGui::InputFloat2(scene.customOriginActive && polylineStartRelativeToCustomOrigin ? "Start dX,dY" : "Start X,Y",
+                               polylineStartInput);
             if (ImGui::Button("Set start")) {
-                currentPolylineVertices.push_back(
-                    sf::Vector2f(polylineStartInput[0], polylineStartInput[1]));
+                sf::Vector2f start(polylineStartInput[0], polylineStartInput[1]);
+                if (scene.customOriginActive && polylineStartRelativeToCustomOrigin) {
+                    start += scene.customOriginPos;
+                }
+                currentPolylineVertices.push_back(start);
             }
             ImGui::TextDisabled("Or left-click to place start point.");
         } else {
