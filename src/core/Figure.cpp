@@ -379,4 +379,80 @@ namespace core {
         anchor += delta;
     }
 
+    void Figure::serialize(std::ostream& out, int indent) const {
+        std::string pad(indent, ' ');
+        out << pad << "id " << id << "\n";
+        out << pad << "anchor " << anchor.x << " " << anchor.y << "\n";
+        out << pad << "parent_origin " << parentOrigin.x << " " << parentOrigin.y << "\n";
+        out << pad << "rotation " << rotationAngle << "\n";
+        out << pad << "scale " << scale.x << " " << scale.y << "\n";
+        out << pad << "fill " << (int)fillColor.r << " " << (int)fillColor.g << " " 
+            << (int)fillColor.b << " " << (int)fillColor.a << "\n";
+        out << pad << "edges " << edges.size() << "\n";
+        for (size_t i = 0; i < edges.size(); ++i) {
+            out << pad << "  edge " << i << " width " << edges[i].width << " color " 
+                << (int)edges[i].color.r << " " << (int)edges[i].color.g << " "
+                << (int)edges[i].color.b << " " << (int)edges[i].color.a << "\n";
+        }
+
+        out << pad << "locked_sides " << lockedSides.size() << "\n";
+        for (size_t i = 0; i < lockedSides.size(); ++i) {
+            out << pad << "  lock_s " << i << " " << (lockedSides[i] ? 1 : 0) << " " << lockedLengths[i] << "\n";
+        }
+        out << pad << "locked_angles " << lockedAngles.size() << "\n";
+        for (size_t i = 0; i < lockedAngles.size(); ++i) {
+            out << pad << "  lock_a " << i << " " << (lockedAngles[i] ? 1 : 0) << " " << lockedAngleValues[i] << "\n";
+        }
+    }
+
+    bool Figure::deserialize(const std::string& prop, std::istream& in) {
+        if (prop == "id") in >> id;
+        else if (prop == "anchor") in >> anchor.x >> anchor.y;
+        else if (prop == "parent_origin") in >> parentOrigin.x >> parentOrigin.y;
+        else if (prop == "rotation") in >> rotationAngle;
+        else if (prop == "scale") in >> scale.x >> scale.y;
+        else if (prop == "fill") {
+            int r, g, b, a; in >> r >> g >> b >> a;
+            fillColor = sf::Color(r, g, b, a);
+        } else if (prop == "edges") {
+            size_t count; in >> count;
+            edges.resize(count);
+            for (size_t i = 0; i < count; ++i) {
+                std::string dummy; size_t idx; float width; int r, g, b, a;
+                in >> dummy >> idx >> dummy >> width >> dummy >> r >> g >> b >> a;
+                if (idx < count) {
+                    edges[idx].width = width;
+                    edges[idx].color = sf::Color(r, g, b, a);
+                }
+            }
+        } else if (prop == "locked_sides") {
+            size_t count; in >> count;
+            lockedSides.resize(count);
+            lockedLengths.resize(count);
+            for (size_t i = 0; i < count; ++i) {
+                std::string dummy; size_t idx; int locked; float len;
+                in >> dummy >> idx >> locked >> len;
+                if (idx < count) {
+                    lockedSides[idx] = (locked != 0);
+                    lockedLengths[idx] = len;
+                }
+            }
+        } else if (prop == "locked_angles") {
+            size_t count; in >> count;
+            lockedAngles.resize(count);
+            lockedAngleValues.resize(count);
+            for (size_t i = 0; i < count; ++i) {
+                std::string dummy; size_t idx; int locked; float val;
+                in >> dummy >> idx >> locked >> val;
+                if (idx < count) {
+                    lockedAngles[idx] = (locked != 0);
+                    lockedAngleValues[idx] = val;
+                }
+            }
+        } else {
+            return false;
+        }
+        return true;
+    }
+
 } // namespace core

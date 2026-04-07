@@ -49,6 +49,26 @@ std::unique_ptr<Figure> Rectangle::clone() const {
     return copy;
 }
 
+void Rectangle::serialize(std::ostream& out, int indent) const {
+    PolylineFigure::serialize(out, indent);
+    std::string pad(indent, ' ');
+    out << pad << "width " << m_width << "\n";
+    out << pad << "height " << m_height << "\n";
+}
+
+bool Rectangle::deserialize(const std::string& prop, std::istream& in) {
+    if (prop == "width") {
+        float w; in >> w;
+        setDimensions(w, m_height);
+        return true;
+    } else if (prop == "height") {
+        float h; in >> h;
+        setDimensions(m_width, h);
+        return true;
+    }
+    return PolylineFigure::deserialize(prop, in);
+}
+
 // ─── Triangle 
 Triangle::Triangle(float base, float height) : m_base(base), m_height(height) {
     figureName = "Triangle";
@@ -102,6 +122,26 @@ std::unique_ptr<Figure> Triangle::clone() const {
     return copy;
 }
 
+void Triangle::serialize(std::ostream& out, int indent) const {
+    PolylineFigure::serialize(out, indent);
+    std::string pad(indent, ' ');
+    out << pad << "base " << m_base << "\n";
+    out << pad << "height " << m_height << "\n";
+}
+
+bool Triangle::deserialize(const std::string& prop, std::istream& in) {
+    if (prop == "base") {
+        float b; in >> b;
+        setDimensions(b, m_height);
+        return true;
+    } else if (prop == "height") {
+        float h; in >> h;
+        setDimensions(m_base, h);
+        return true;
+    }
+    return PolylineFigure::deserialize(prop, in);
+}
+
 // ─── Hexagon 
 Hexagon::Hexagon(float width, float height) : m_width(width), m_height(height) {
     figureName = "Hexagon";
@@ -129,6 +169,26 @@ std::unique_ptr<Figure> Hexagon::clone() const {
     copy->lockedLengths = lockedLengths;
     copy->m_vertices = m_vertices;
     return copy;
+}
+
+void Hexagon::serialize(std::ostream& out, int indent) const {
+    PolylineFigure::serialize(out, indent);
+    std::string pad(indent, ' ');
+    out << pad << "width " << m_width << "\n";
+    out << pad << "height " << m_height << "\n";
+}
+
+bool Hexagon::deserialize(const std::string& prop, std::istream& in) {
+    if (prop == "width") {
+        float w; in >> w;
+        setDimensions(w, m_height);
+        return true;
+    } else if (prop == "height") {
+        float h; in >> h;
+        setDimensions(m_width, h);
+        return true;
+    }
+    return PolylineFigure::deserialize(prop, in);
 }
 
 // ─── Rhombus 
@@ -160,6 +220,26 @@ std::unique_ptr<Figure> Rhombus::clone() const {
     copy->lockedLengths = lockedLengths;
     copy->m_vertices = m_vertices;
     return copy;
+}
+
+void Rhombus::serialize(std::ostream& out, int indent) const {
+    PolylineFigure::serialize(out, indent);
+    std::string pad(indent, ' ');
+    out << pad << "width " << m_width << "\n";
+    out << pad << "height " << m_height << "\n";
+}
+
+bool Rhombus::deserialize(const std::string& prop, std::istream& in) {
+    if (prop == "width") {
+        float w; in >> w;
+        setDimensions(w, m_height);
+        return true;
+    } else if (prop == "height") {
+        float h; in >> h;
+        setDimensions(m_width, h);
+        return true;
+    }
+    return PolylineFigure::deserialize(prop, in);
 }
 
 // ─── Trapezoid 
@@ -226,6 +306,31 @@ std::unique_ptr<Figure> Trapezoid::clone() const {
     return copy;
 }
 
+void Trapezoid::serialize(std::ostream& out, int indent) const {
+    PolylineFigure::serialize(out, indent);
+    std::string pad(indent, ' ');
+    out << pad << "top_width " << m_topWidth << "\n";
+    out << pad << "bottom_width " << m_bottomWidth << "\n";
+    out << pad << "height " << m_height << "\n";
+}
+
+bool Trapezoid::deserialize(const std::string& prop, std::istream& in) {
+    if (prop == "top_width") {
+        float t; in >> t;
+        setDimensions(t, m_bottomWidth, m_height);
+        return true;
+    } else if (prop == "bottom_width") {
+        float b; in >> b;
+        setDimensions(m_topWidth, b, m_height);
+        return true;
+    } else if (prop == "height") {
+        float h; in >> h;
+        setDimensions(m_topWidth, m_bottomWidth, h);
+        return true;
+    }
+    return PolylineFigure::deserialize(prop, in);
+}
+
 // ─── Circle 
 Circle::Circle(float radiusX, float radiusY) : m_radiusX(radiusX), m_radiusY(radiusY) {
     figureName = "Circle";
@@ -258,6 +363,26 @@ std::unique_ptr<Figure> Circle::clone() const {
     copy->scale = scale;
     copy->edges = edges;
     return copy;
+}
+
+void Circle::serialize(std::ostream& out, int indent) const {
+    PolylineFigure::serialize(out, indent);
+    std::string pad(indent, ' ');
+    out << pad << "radius_x " << m_radiusX << "\n";
+    out << pad << "radius_y " << m_radiusY << "\n";
+}
+
+bool Circle::deserialize(const std::string& prop, std::istream& in) {
+    if (prop == "radius_x") {
+        float rx; in >> rx;
+        setRadius(rx, m_radiusY);
+        return true;
+    } else if (prop == "radius_y") {
+        float ry; in >> ry;
+        setRadius(m_radiusX, ry);
+        return true;
+    }
+    return PolylineFigure::deserialize(prop, in);
 }
 
 // Note: we let Figure::draw handle the rendering of polygons.

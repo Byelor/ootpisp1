@@ -11,6 +11,8 @@ public:
     const char* getSideName(int idx) const override;
     void setSideLengths(const std::vector<float>& lengths) override;
     std::unique_ptr<Figure> clone() const override;
+    void serialize(std::ostream& out, int indent) const override;
+    bool deserialize(const std::string& prop, std::istream& in) override;
     float getWidth() const { return m_width; }
     float getHeight() const { return m_height; }
     void setDimensions(float w, float h) { m_width = w; m_height = h; }
@@ -25,6 +27,8 @@ public:
     const char* getSideName(int idx) const override;
     void setSideLengths(const std::vector<float>& lengths) override;
     std::unique_ptr<Figure> clone() const override;
+    void serialize(std::ostream& out, int indent) const override;
+    bool deserialize(const std::string& prop, std::istream& in) override;
     float getBase() const { return m_base; }
     float getHeight() const { return m_height; }
     void setDimensions(float b, float h) { m_base = b; m_height = h; }
@@ -38,6 +42,8 @@ public:
     std::string typeName() const override { return "hexagon"; }
     const char* getSideName(int idx) const override;
     std::unique_ptr<Figure> clone() const override;
+    void serialize(std::ostream& out, int indent) const override;
+    bool deserialize(const std::string& prop, std::istream& in) override;
     float getWidth() const { return m_width; }
     float getHeight() const { return m_height; }
     void setDimensions(float w, float h) { m_width = w; m_height = h; }
@@ -51,6 +57,8 @@ public:
     std::string typeName() const override { return "rhombus"; }
     const char* getSideName(int idx) const override;
     std::unique_ptr<Figure> clone() const override;
+    void serialize(std::ostream& out, int indent) const override;
+    bool deserialize(const std::string& prop, std::istream& in) override;
     float getWidth() const { return m_width; }
     float getHeight() const { return m_height; }
     void setDimensions(float w, float h) { m_width = w; m_height = h; }
@@ -65,6 +73,8 @@ public:
     const char* getSideName(int idx) const override;
     void setSideLengths(const std::vector<float>& lengths) override;
     std::unique_ptr<Figure> clone() const override;
+    void serialize(std::ostream& out, int indent) const override;
+    bool deserialize(const std::string& prop, std::istream& in) override;
     float getTopWidth() const { return m_topWidth; }
     float getBottomWidth() const { return m_bottomWidth; }
     float getHeight() const { return m_height; }
@@ -81,6 +91,8 @@ public:
     bool hasSideLengths() const override { return false; }
     bool hasUniformEdge() const override { return true; }
     void draw(sf::RenderTarget& target) const override;
+    void serialize(std::ostream& out, int indent) const override;
+    bool deserialize(const std::string& prop, std::istream& in) override;
     
     sf::FloatRect getBoundingBox() const override;
     sf::FloatRect getLocalBoundingBox() const override;

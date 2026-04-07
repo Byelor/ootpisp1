@@ -5,6 +5,7 @@
 #include <memory>
 #include <string>
 #include <vector>
+#include <iostream>
 
 namespace core {
 
@@ -20,6 +21,9 @@ public:
   virtual ~Figure() = default;
   virtual std::unique_ptr<Figure> clone() const = 0;
   virtual std::string typeName() const = 0;
+
+  virtual void serialize(std::ostream& out, int indent) const;
+  virtual bool deserialize(const std::string& prop, std::istream& in);
 
   // Stable unique identifier (assigned by Scene). 0 means "unassigned".
   std::uint64_t id = 0;

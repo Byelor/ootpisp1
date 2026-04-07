@@ -1,5 +1,6 @@
 #include "CompositeFigure.hpp"
 #include "Scene.hpp"
+#include "SceneSerializer.hpp"
 #include "MathUtils.hpp"
 #include "utils/GeometryUtils.hpp"
 #include <algorithm>
@@ -354,6 +355,65 @@ void CompositeFigure::setAnchorKeepAbsolute(sf::Vector2f newAnchor) {
         child.figure->anchor.x -= vx;
         child.figure->anchor.y -= vy;
     }
+}
+
+void CompositeFigure::serialize(std::ostream& out, int indent) const {
+    Figure::serialize(out, indent);
+    std::string pad(indent, ' ');
+    out << pad << "name " << figureName << "\n";
+    out << pad << "solid_group " << (isSolidGroup ? 1 : 0) << "\n";
+    auto& verts = this->m_vertices;
+    out << pad << "vertices_base " << verts.size() << "\n";
+    for (size_t i = 0; i < verts.size(); ++i) {
+        out << pad << "  vertex " << i << " " << verts[i].x << " " << verts[i].y << "\n";
+    }
+
+    out << pad << "children " << children.size() << "\n";
+    for (size_t i = 0; i < children.size(); ++i) {
+        SceneSerializer::writeFigure(out, children[i].figure.get(), indent + 2);
+    }
+}
+
+bool CompositeFigure::deserialize(const std::string& prop, std::istream& in) {
+    if (prop == "name") {
+        in >> std::ws;
+        std::getline(in, figureName);
+        return true;
+    } else if (prop == "solid_group") {
+        int v; in >> v;
+        isSolidGroup = (v != 0);
+        return true;
+    } else if (prop == "vertices" || prop == "vertices_base") {
+        size_t count;
+        in >> count;
+        auto& m_verts = getVerticesMutable();
+        m_verts.resize(count);
+        for (size_t i = 0; i < count; ++i) {
+            std::string dummy;
+            size_t idx;
+            float px, py;
+            in >> dummy >> idx >> px >> py;
+            if (idx < count) {
+                m_verts[idx] = {px, py};
+            }
+        }
+        return true;
+    } else if (prop == "children") {
+        size_t childCount;
+        in >> childCount;
+        for (size_t i = 0; i < childCount; ++i) {
+            Child child;
+            child.figure = SceneSerializer::readFigure(in);
+            if (child.figure) {
+                child.figure->parentFigure = this;
+                children.push_back(std::move(child));
+            }
+        }
+        return true;
+    }
+    
+    // Pass everything else to base class Figure
+    return Figure::deserialize(prop, in);
 }
 
 } // namespace core

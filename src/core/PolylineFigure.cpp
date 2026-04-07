@@ -130,4 +130,40 @@ void PolylineFigure::setVertexAngle(int vertIdx, float angleDeg) {
     }
 }
 
+void PolylineFigure::serialize(std::ostream& out, int indent) const {
+    Figure::serialize(out, indent);
+    std::string pad(indent, ' ');
+    out << pad << "name " << figureName << "\n";
+    auto verts = getVertices(); // save current relative vertices
+    out << pad << "vertices_base " << verts.size() << "\n";
+    for (size_t i = 0; i < verts.size(); ++i) {
+        out << pad << "  vertex " << i << " " << verts[i].x << " " << verts[i].y << "\n";
+    }
+}
+
+bool PolylineFigure::deserialize(const std::string& prop, std::istream& in) {
+    if (prop == "name") {
+        in >> std::ws;
+        std::getline(in, figureName);
+        return true;
+    } else if (prop == "vertices" || prop == "vertices_base") {
+        size_t count;
+        in >> count;
+        m_vertices.resize(count);
+        for (size_t i = 0; i < count; ++i) {
+            std::string dummy;
+            size_t idx;
+            float px, py;
+            in >> dummy >> idx >> px >> py;
+            if (idx < count) {
+                m_vertices[idx] = {px, py};
+            }
+        }
+        return true;
+    }
+    
+    // Pass everything else to base class
+    return Figure::deserialize(prop, in);
+}
+
 } // namespace core

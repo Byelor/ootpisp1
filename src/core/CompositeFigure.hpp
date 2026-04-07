@@ -53,6 +53,9 @@ public:
     std::unique_ptr<Figure> clone() const override;
     void applyScale() override;
 
+    void serialize(std::ostream& out, int indent) const override;
+    bool deserialize(const std::string& prop, std::istream& in) override;
+
     void resetAnchor() override;
     void setAnchorKeepAbsolute(sf::Vector2f newAnchor) override;
 
