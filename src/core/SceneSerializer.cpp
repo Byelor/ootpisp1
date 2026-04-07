@@ -46,8 +46,6 @@ void SceneSerializer::writeFigure(std::ostream& out, const Figure* fig, int inde
         // Children
         out << pad << "children " << cf->children.size() << "\n";
         for (size_t i = 0; i < cf->children.size(); ++i) {
-            out << pad << "  child_offset " << i << " " << cf->children[i].figure->anchor.x << " " << cf->children[i].figure->anchor.y << "\n";
-            out << pad << "  child_rotation " << i << " " << cf->children[i].figure->rotationAngle << "\n";
             out << pad << "  child_begin\n";
             writeFigure(out, cf->children[i].figure.get(), indent + 4);
             out << pad << "  child_end\n";
@@ -66,6 +64,33 @@ void SceneSerializer::writeFigure(std::ostream& out, const Figure* fig, int inde
 
 static void writePolylineFields(std::ostream& out, const PolylineFigure* fig, int indent) {
     std::string pad(indent, ' ');
+    if (auto r = dynamic_cast<const Rectangle*>(fig)) {
+        out << pad << "width " << r->getWidth() << "\n";
+        out << pad << "height " << r->getHeight() << "\n";
+    } else if (auto t = dynamic_cast<const Triangle*>(fig)) {
+        out << pad << "base " << t->getBase() << "\n";
+        out << pad << "height " << t->getHeight() << "\n";
+    } else if (auto rh = dynamic_cast<const Rhombus*>(fig)) {
+        out << pad << "width " << rh->getWidth() << "\n";
+        out << pad << "height " << rh->getHeight() << "\n";
+    } else if (auto h = dynamic_cast<const Hexagon*>(fig)) {
+        out << pad << "width " << h->getWidth() << "\n";
+        out << pad << "height " << h->getHeight() << "\n";
+    } else if (auto tr = dynamic_cast<const Trapezoid*>(fig)) {
+        out << pad << "top_width " << tr->getTopWidth() << "\n";
+        out << pad << "bottom_width " << tr->getBottomWidth() << "\n";
+        out << pad << "height " << tr->getHeight() << "\n";
+    }
+    
+    out << pad << "locked_sides " << fig->lockedSides.size() << "\n";
+    for (size_t i = 0; i < fig->lockedSides.size(); ++i) {
+        out << pad << "  lock_s " << i << " " << (fig->lockedSides[i] ? 1 : 0) << " " << fig->lockedLengths[i] << "\n";
+    }
+    out << pad << "locked_angles " << fig->lockedAngles.size() << "\n";
+    for (size_t i = 0; i < fig->lockedAngles.size(); ++i) {
+        out << pad << "  lock_a " << i << " " << (fig->lockedAngles[i] ? 1 : 0) << " " << fig->lockedAngleValues[i] << "\n";
+    }
+
     out << pad << "id " << fig->id << "\n";
     out << pad << "name " << fig->figureName << "\n";
     out << pad << "anchor " << fig->anchor.x << " " << fig->anchor.y << "\n";
@@ -123,6 +148,51 @@ static void readPolylineFields(std::istream& in, PolylineFigure* fig) {
                 in >> dummy >> idx >> px >> py;
                 if (idx < count) m_verts[idx] = {px, py};
             }
+        } else if (prop == "width") {
+            float w; in >> w;
+            if (auto r = dynamic_cast<Rectangle*>(fig)) r->setDimensions(w, r->getHeight());
+            else if (auto h = dynamic_cast<Hexagon*>(fig)) h->setDimensions(w, h->getHeight());
+            else if (auto rh = dynamic_cast<Rhombus*>(fig)) rh->setDimensions(w, rh->getHeight());
+        } else if (prop == "height") {
+            float h; in >> h;
+            if (auto r = dynamic_cast<Rectangle*>(fig)) r->setDimensions(r->getWidth(), h);
+            else if (auto hx = dynamic_cast<Hexagon*>(fig)) hx->setDimensions(hx->getWidth(), h);
+            else if (auto rh = dynamic_cast<Rhombus*>(fig)) rh->setDimensions(rh->getWidth(), h);
+            else if (auto t = dynamic_cast<Triangle*>(fig)) t->setDimensions(t->getBase(), h);
+            else if (auto tr = dynamic_cast<Trapezoid*>(fig)) tr->setDimensions(tr->getTopWidth(), tr->getBottomWidth(), h);
+        } else if (prop == "base") {
+            float b; in >> b;
+            if (auto t = dynamic_cast<Triangle*>(fig)) t->setDimensions(b, t->getHeight());
+        } else if (prop == "top_width") {
+            float tw; in >> tw;
+            if (auto tr = dynamic_cast<Trapezoid*>(fig)) tr->setDimensions(tw, tr->getBottomWidth(), tr->getHeight());
+        } else if (prop == "bottom_width") {
+            float bw; in >> bw;
+            if (auto tr = dynamic_cast<Trapezoid*>(fig)) tr->setDimensions(tr->getTopWidth(), bw, tr->getHeight());
+        } else if (prop == "locked_sides") {
+            size_t count; in >> count;
+            fig->lockedSides.resize(count);
+            fig->lockedLengths.resize(count);
+            for (size_t i = 0; i < count; ++i) {
+                std::string dummy; size_t idx; int locked; float len;
+                in >> dummy >> idx >> locked >> len;
+                if (idx < count) {
+                    fig->lockedSides[idx] = (locked != 0);
+                    fig->lockedLengths[idx] = len;
+                }
+            }
+        } else if (prop == "locked_angles") {
+            size_t count; in >> count;
+            fig->lockedAngles.resize(count);
+            fig->lockedAngleValues.resize(count);
+            for (size_t i = 0; i < count; ++i) {
+                std::string dummy; size_t idx; int locked; float val;
+                in >> dummy >> idx >> locked >> val;
+                if (idx < count) {
+                    fig->lockedAngles[idx] = (locked != 0);
+                    fig->lockedAngleValues[idx] = val;
+                }
+            }
         }
     }
 }
@@ -178,6 +248,15 @@ void SceneSerializer::writeCommonFields(std::ostream& out, const CompositeFigure
     out << pad << "vertices_base " << verts.size() << "\n";
     for (size_t i = 0; i < verts.size(); ++i) {
         out << pad << "  vertex " << i << " " << verts[i].x << " " << verts[i].y << "\n";
+    }
+
+    out << pad << "locked_sides " << fig->lockedSides.size() << "\n";
+    for (size_t i = 0; i < fig->lockedSides.size(); ++i) {
+        out << pad << "  lock_s " << i << " " << (fig->lockedSides[i] ? 1 : 0) << " " << fig->lockedLengths[i] << "\n";
+    }
+    out << pad << "locked_angles " << fig->lockedAngles.size() << "\n";
+    for (size_t i = 0; i < fig->lockedAngles.size(); ++i) {
+        out << pad << "  lock_a " << i << " " << (fig->lockedAngles[i] ? 1 : 0) << " " << fig->lockedAngleValues[i] << "\n";
     }
 }
 
@@ -241,6 +320,30 @@ void SceneSerializer::readCommonFields(std::istream& in, CompositeFigure* fig) {
                     m_verts[idx] = {px, py};
                 }
             }
+        } else if (prop == "locked_sides") {
+            size_t count; in >> count;
+            fig->lockedSides.resize(count);
+            fig->lockedLengths.resize(count);
+            for (size_t i = 0; i < count; ++i) {
+                std::string dummy; size_t idx; int locked; float len;
+                in >> dummy >> idx >> locked >> len;
+                if (idx < count) {
+                    fig->lockedSides[idx] = (locked != 0);
+                    fig->lockedLengths[idx] = len;
+                }
+            }
+        } else if (prop == "locked_angles") {
+            size_t count; in >> count;
+            fig->lockedAngles.resize(count);
+            fig->lockedAngleValues.resize(count);
+            for (size_t i = 0; i < count; ++i) {
+                std::string dummy; size_t idx; int locked; float val;
+                in >> dummy >> idx >> locked >> val;
+                if (idx < count) {
+                    fig->lockedAngles[idx] = (locked != 0);
+                    fig->lockedAngleValues[idx] = val;
+                }
+            }
         } else if (prop == "children") {
             size_t childCount;
             in >> childCount;
@@ -250,10 +353,12 @@ void SceneSerializer::readCommonFields(std::istream& in, CompositeFigure* fig) {
                 while (in >> word) {
                     if (word == "child_offset") {
                         size_t idx;
-                        in >> idx >> child.figure->anchor.x >> child.figure->anchor.y;
+                        float dummyX, dummyY;
+                        in >> idx >> dummyX >> dummyY;
                     } else if (word == "child_rotation") {
                         size_t idx;
-                        in >> idx >> child.figure->rotationAngle;
+                        float dummyRot;
+                        in >> idx >> dummyRot;
                     } else if (word == "child_begin") {
                         std::string figWord;
                         in >> figWord; 
@@ -261,7 +366,10 @@ void SceneSerializer::readCommonFields(std::istream& in, CompositeFigure* fig) {
                             child.figure = readFigure(in);
                         }
                     } else if (word == "child_end") {
-                        if (child.figure) fig->children.push_back(std::move(child));
+                        if (child.figure) {
+                            child.figure->parentFigure = fig;
+                            fig->children.push_back(std::move(child));
+                        }
                         break;
                     }
                 }

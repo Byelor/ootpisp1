@@ -11,6 +11,9 @@ public:
     const char* getSideName(int idx) const override;
     void setSideLengths(const std::vector<float>& lengths) override;
     std::unique_ptr<Figure> clone() const override;
+    float getWidth() const { return m_width; }
+    float getHeight() const { return m_height; }
+    void setDimensions(float w, float h) { m_width = w; m_height = h; }
 private:
     float m_width, m_height;
 };
@@ -22,6 +25,9 @@ public:
     const char* getSideName(int idx) const override;
     void setSideLengths(const std::vector<float>& lengths) override;
     std::unique_ptr<Figure> clone() const override;
+    float getBase() const { return m_base; }
+    float getHeight() const { return m_height; }
+    void setDimensions(float b, float h) { m_base = b; m_height = h; }
 private:
     float m_base, m_height;
 };
@@ -32,6 +38,9 @@ public:
     std::string typeName() const override { return "hexagon"; }
     const char* getSideName(int idx) const override;
     std::unique_ptr<Figure> clone() const override;
+    float getWidth() const { return m_width; }
+    float getHeight() const { return m_height; }
+    void setDimensions(float w, float h) { m_width = w; m_height = h; }
 private:
     float m_width, m_height;
 };
@@ -42,6 +51,9 @@ public:
     std::string typeName() const override { return "rhombus"; }
     const char* getSideName(int idx) const override;
     std::unique_ptr<Figure> clone() const override;
+    float getWidth() const { return m_width; }
+    float getHeight() const { return m_height; }
+    void setDimensions(float w, float h) { m_width = w; m_height = h; }
 private:
     float m_width, m_height;
 };
@@ -53,6 +65,10 @@ public:
     const char* getSideName(int idx) const override;
     void setSideLengths(const std::vector<float>& lengths) override;
     std::unique_ptr<Figure> clone() const override;
+    float getTopWidth() const { return m_topWidth; }
+    float getBottomWidth() const { return m_bottomWidth; }
+    float getHeight() const { return m_height; }
+    void setDimensions(float topW, float bottomW, float h) { m_topWidth = topW; m_bottomWidth = bottomW; m_height = h; }
 private:
     float m_topWidth, m_bottomWidth, m_height;
 };
