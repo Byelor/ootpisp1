@@ -62,8 +62,9 @@ std::unique_ptr<Figure> CompositeFigure::extractChild(Figure* childPtr) {
         if (it->figure.get() == childPtr) {
             auto ptr = std::move(it->figure);
             children.erase(it);
-            // Возвращаем абсолютное положение
-            sf::Vector2f absAnchor = getAbsoluteAnchor() + ptr->anchor;
+            // Compute the true absolute position BEFORE clearing parentFigure
+            // ptr->parentFigure is still 'this', so getAbsoluteAnchor() works correctly
+            sf::Vector2f absAnchor = ptr->getAbsoluteAnchor();
             ptr->parentFigure = nullptr;
             ptr->anchor       = absAnchor;
             ptr->parentOrigin = {0.f, 0.f};

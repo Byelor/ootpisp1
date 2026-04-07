@@ -511,13 +511,13 @@ bool PropertiesPanel::render(core::Scene &scene, core::Viewport &viewport, std::
               if (ImGui::Button("Extract")) {
                   auto extracted = cf->extractChild(cf->children[i].figure.get());
                   if (extracted) {
-                      sf::Vector2f scaledOffset(extracted->anchor.x * cf->scale.x, extracted->anchor.y * cf->scale.y);
-                      sf::Vector2f absOffset = core::math::rotate(scaledOffset, cf->rotationAngle * core::math::DEG_TO_RAD);
-                      extracted->parentOrigin = sf::Vector2f(0.f, 0.f);
-                      extracted->anchor = cf->parentOrigin + cf->anchor + absOffset;
-                      extracted->rotationAngle += cf->rotationAngle;
-                      extracted->scale.x *= cf->scale.x;
-                      extracted->scale.y *= cf->scale.y;
+                      // extractChild already set anchor to the absolute world position.
+                      // Accumulate parent rotation and scale so the figure looks the same.
+                      float parentAbsRot = cf->getAbsoluteRotation();
+                      sf::Vector2f parentAbsScale = cf->getAbsoluteScale();
+                      extracted->rotationAngle += parentAbsRot;
+                      extracted->scale.x *= parentAbsScale.x;
+                      extracted->scale.y *= parentAbsScale.y;
                       scene.addFigure(std::move(extracted));
                   }
               }

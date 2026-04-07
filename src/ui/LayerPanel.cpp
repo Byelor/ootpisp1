@@ -50,8 +50,9 @@ bool LayerPanel::render(core::Scene& scene) {
         std::unique_ptr<core::Figure> extracted;
         
         // 1. Calculate absolute properties before extraction
-        sf::Vector2f absPos = m_dragSourceFig->parentOrigin + m_dragSourceFig->anchor;
-        float absRot = m_dragSourceFig->rotationAngle;
+        sf::Vector2f absPos = m_dragSourceFig->getAbsoluteAnchor();
+        float absRot = m_dragSourceFig->getAbsoluteRotation();
+        sf::Vector2f absScale = m_dragSourceFig->getAbsoluteScale();
         
         // 2. Extract
         if (m_dragSourceParent) {
@@ -63,28 +64,29 @@ bool LayerPanel::render(core::Scene& scene) {
         if (extracted) {
             // 3. Insert into target
             if (m_dropTargetParent) {
-                // Determine new local properties relative to the new parent
-                // newParent is m_dropTargetParent
-                sf::Vector2f parentAbsPos = m_dropTargetParent->parentOrigin + m_dropTargetParent->anchor;
-                float parentRot = m_dropTargetParent->rotationAngle;
+                // Convert absolute position to new parent's local coordinates
+                sf::Vector2f parentAbsPos = m_dropTargetParent->getAbsoluteAnchor();
+                float parentAbsRot = m_dropTargetParent->getAbsoluteRotation();
+                sf::Vector2f parentAbsScale = m_dropTargetParent->getAbsoluteScale();
                 
                 sf::Vector2f diff = absPos - parentAbsPos;
-                // Rotate diff by -parentRot to get local offset
-                sf::Vector2f localOffset = core::math::rotate(diff, -parentRot * core::math::DEG_TO_RAD);
-                // Also account for parent scale if it varies, but usually it's 1, 1 if we applyScale()
-                if (m_dropTargetParent->scale.x != 0 && m_dropTargetParent->scale.y != 0) {
-                    localOffset.x /= m_dropTargetParent->scale.x;
-                    localOffset.y /= m_dropTargetParent->scale.y;
+                sf::Vector2f localOffset = core::math::rotate(diff, -parentAbsRot * core::math::DEG_TO_RAD);
+                if (parentAbsScale.x != 0 && parentAbsScale.y != 0) {
+                    localOffset.x /= parentAbsScale.x;
+                    localOffset.y /= parentAbsScale.y;
                 }
                 
-                float localRot = absRot - parentRot;
+                float localRot = absRot - parentAbsRot;
+                // Restore child's own scale (undo parent scale accumulation from extractChild)
+                extracted->scale = {absScale.x / parentAbsScale.x, absScale.y / parentAbsScale.y};
 
                 m_dropTargetParent->insertChild(std::move(extracted), m_dropTargetIndex, localOffset, localRot);
             } else {
-                // Drop to scene root
+                // Drop to scene root — extractChild already set absolute anchor
                 extracted->parentOrigin = sf::Vector2f(0.f, 0.f);
                 extracted->anchor = absPos;
                 extracted->rotationAngle = absRot;
+                extracted->scale = absScale;
                 scene.insertFigure(std::move(extracted), m_dropTargetIndex);
             }
             changed = true;
