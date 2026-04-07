@@ -1,38 +1,65 @@
 #include "Scene.hpp"
+#include "CompositeFigure.hpp"
 #include "utils/GeometryUtils.hpp"
 
 namespace core {
 
-void Scene::addFigure(std::unique_ptr<Figure> fig) {
-  if (fig) {
-    m_figures.push_back(std::move(fig));
+void Scene::observeExistingIdsRecursive(const Figure* fig) {
+  if (!fig) return;
+  if (fig->id != 0) {
+    m_nextId = std::max(m_nextId, fig->id + 1);
   }
+  if (auto cf = dynamic_cast<const CompositeFigure*>(fig)) {
+    for (const auto& child : cf->children) {
+      observeExistingIdsRecursive(child.figure.get());
+    }
+  }
+}
+
+void Scene::assignIdsRecursive(Figure* fig) {
+  if (!fig) return;
+  if (fig->id == 0) {
+    fig->id = m_nextId++;
+  } else {
+    m_nextId = std::max(m_nextId, fig->id + 1);
+  }
+  if (auto cf = dynamic_cast<CompositeFigure*>(fig)) {
+    for (auto& child : cf->children) {
+      assignIdsRecursive(child.figure.get());
+    }
+  }
+}
+
+void Scene::addFigure(std::unique_ptr<Figure> fig) {
+  observeExistingIdsRecursive(fig.get());
+  assignIdsRecursive(fig.get());
+  m_figures.add(std::move(fig));
+}
+
+std::unique_ptr<Figure> Scene::extractFigure(Figure *fig) {
+  return m_figures.extract(fig);
 }
 
 bool Scene::removeFigure(Figure *fig) {
-  for (auto it = m_figures.begin(); it != m_figures.end(); ++it) {
-    if (it->get() == fig) {
-      m_figures.erase(it);
-      return true;
-    }
-  }
-  return false;
+  return m_figures.remove(fig);
+}
+
+bool Scene::insertFigure(std::unique_ptr<Figure> fig, int index) {
+  observeExistingIdsRecursive(fig.get());
+  assignIdsRecursive(fig.get());
+  return m_figures.insert(std::move(fig), index);
+}
+
+bool Scene::moveFigure(int fromIdx, int toIdx) {
+  return m_figures.moveItem(fromIdx, toIdx);
 }
 
 Figure *Scene::hitTest(sf::Vector2f point) const {
-  // Iterate backwards to check top-most figures first
-  for (auto it = m_figures.rbegin(); it != m_figures.rend(); ++it) {
-    if ((*it)->contains(point)) {
-      return it->get();
-    }
-  }
-  return nullptr;
+  return m_figures.hitTest(point);
 }
 
 void Scene::drawAll(sf::RenderTarget &target, float markerScale) const {
-  for (const auto &fig : m_figures) {
-    fig->draw(target);
-  }
+  m_figures.drawAll(target, markerScale);
 
   // Draw bounding box if a figure is selected
   if (m_selectedFigure) {
@@ -68,7 +95,8 @@ void Scene::drawAll(sf::RenderTarget &target, float markerScale) const {
 }
 
 void Scene::setCustomOrigin(sf::Vector2f newOriginWorld) {
-  for (auto &figure : m_figures) {
+  for (int i = 0; i < m_figures.count(); ++i) {
+    auto figure = m_figures.get(i);
     if (!customOriginActive) {
       figure->parentOrigin = newOriginWorld;
       figure->anchor -= newOriginWorld;
@@ -85,7 +113,8 @@ void Scene::setCustomOrigin(sf::Vector2f newOriginWorld) {
 void Scene::resetCustomOrigin() {
   if (!customOriginActive)
     return;
-  for (auto &figure : m_figures) {
+  for (int i = 0; i < m_figures.count(); ++i) {
+    auto figure = m_figures.get(i);
     figure->anchor += customOriginPos;
     figure->parentOrigin = sf::Vector2f(0.f, 0.f);
   }

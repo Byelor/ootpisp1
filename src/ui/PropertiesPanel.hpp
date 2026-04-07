@@ -2,7 +2,10 @@
 
 #include "core/Scene.hpp"
 #include "core/Viewport.hpp"
+#include "Toolbar.hpp"
 #include <imgui.h>
+#include <vector>
+#include <memory>
 
 namespace ui {
 
@@ -10,7 +13,7 @@ class PropertiesPanel {
 public:
   // Renders the properties panel and returns true if "Fit to Screen" was
   // requested
-  bool render(core::Scene &scene, core::Viewport &viewport);
+  bool render(core::Scene &scene, core::Viewport &viewport, std::vector<core::Figure*>& compoundSelection, std::vector<std::unique_ptr<core::Figure>>& userRegistry, Toolbar& toolbar);
 
 private:
   bool m_lockProportions = true;

@@ -2,13 +2,16 @@
 
 #include "Figure.hpp"
 #include <memory>
-#include <vector>
+#include "SceneArray.hpp"
+#include <cstdint>
 
 namespace core {
 
 class Scene {
 public:
   void addFigure(std::unique_ptr<Figure> fig);
+  bool insertFigure(std::unique_ptr<Figure> fig, int index);
+  bool moveFigure(int fromIdx, int toIdx);
 
   // Removes the given figure from the scene. Returns true if removed.
   bool removeFigure(Figure *fig);
@@ -19,9 +22,9 @@ public:
   // Draw all figures
   void drawAll(sf::RenderTarget &target, float markerScale = 1.0f) const;
 
-  const std::vector<std::unique_ptr<Figure>> &getFigures() const {
-    return m_figures;
-  }
+  int figureCount() const { return m_figures.count(); }
+  Figure *getFigure(int idx) const { return m_figures.get(idx); }
+  std::unique_ptr<Figure> extractFigure(Figure *fig);
 
   // Selected figure
   void setSelectedFigure(Figure *fig) { m_selectedFigure = fig; }
@@ -35,8 +38,14 @@ public:
   void resetCustomOrigin();
 
 private:
-  std::vector<std::unique_ptr<Figure>> m_figures;
+  void assignIdsRecursive(Figure* fig);
+  void observeExistingIdsRecursive(const Figure* fig);
+
+  SceneArray m_figures;
   Figure *m_selectedFigure = nullptr;
+
+  // Next id to assign for newly added figures.
+  std::uint64_t m_nextId = 1;
 };
 
 } // namespace core

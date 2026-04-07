@@ -32,14 +32,12 @@ namespace core::math {
         return a.x * b.y - a.y * b.x;
     }
 
-    // Поворот вектора на угол (в радианах)
     inline sf::Vector2f rotate(sf::Vector2f v, float angle) {
         float c = std::cos(angle);
         float s = std::sin(angle);
         return sf::Vector2f(v.x * c - v.y * s, v.x * s + v.y * c);
     }
 
-    // Линейная интерполяция
     inline sf::Vector2f lerp(sf::Vector2f a, sf::Vector2f b, float t) {
         return a + (b - a) * t;
     }

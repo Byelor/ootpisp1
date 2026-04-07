@@ -1,12 +1,17 @@
 #include "PropertiesPanel.hpp"
+#include "core/Scene.hpp"
+#include "core/CompositeFigure.hpp"
+#include "core/PolylineFigure.hpp"
 #include "core/Figures.hpp"
+#include "core/MathUtils.hpp"
 #include <algorithm>
+#include <imgui.h>
 #include <cstdio>
 #include <string>
 
 namespace ui {
 
-bool PropertiesPanel::render(core::Scene &scene, core::Viewport &viewport) {
+bool PropertiesPanel::render(core::Scene &scene, core::Viewport &viewport, std::vector<core::Figure*>& compoundSelection, std::vector<std::unique_ptr<core::Figure>>& userRegistry, Toolbar& toolbar) {
   core::Figure *selectedFigure = scene.getSelectedFigure();
   bool fitRequested = false;
   ImGui::SetNextWindowPos(ImVec2(ImGui::GetIO().DisplaySize.x - 280, 0),
@@ -87,7 +92,9 @@ bool PropertiesPanel::render(core::Scene &scene, core::Viewport &viewport) {
     return fitRequested;
   }
 
-  ImGui::Text("FIGURE PROPERTIES");
+  char header[64];
+  std::snprintf(header, sizeof(header), "FIGURE PROPERTIES [ID: %llu]", static_cast<unsigned long long>(selectedFigure->id));
+  ImGui::Text("%s", header);
   ImGui::Separator();
   ImGui::Spacing();
 
@@ -133,15 +140,26 @@ bool PropertiesPanel::render(core::Scene &scene, core::Viewport &viewport) {
 
   // 3. Fill Color
   ImGui::Separator();
-  ImGui::Text("Fill Color");
-  float fill[4] = {
-      selectedFigure->fillColor.r / 255.f, selectedFigure->fillColor.g / 255.f,
-      selectedFigure->fillColor.b / 255.f, selectedFigure->fillColor.a / 255.f};
-  if (ImGui::ColorEdit4("##FillColor", fill)) {
-    selectedFigure->fillColor.r = static_cast<sf::Uint8>(fill[0] * 255.f);
-    selectedFigure->fillColor.g = static_cast<sf::Uint8>(fill[1] * 255.f);
-    selectedFigure->fillColor.b = static_cast<sf::Uint8>(fill[2] * 255.f);
-    selectedFigure->fillColor.a = static_cast<sf::Uint8>(fill[3] * 255.f);
+  ImGui::Text("Appearance");
+  float col[4] = {selectedFigure->fillColor.r / 255.f,
+                  selectedFigure->fillColor.g / 255.f,
+                  selectedFigure->fillColor.b / 255.f,
+                  selectedFigure->fillColor.a / 255.f};
+  if (ImGui::ColorEdit4("Fill Color", col)) {
+    sf::Color newColor(static_cast<sf::Uint8>(col[0] * 255.f),
+                       static_cast<sf::Uint8>(col[1] * 255.f),
+                       static_cast<sf::Uint8>(col[2] * 255.f),
+                       static_cast<sf::Uint8>(col[3] * 255.f));
+    
+    auto applyColor = [](core::Figure* f, sf::Color c, auto& applyRef) -> void {
+        f->fillColor = c;
+        if (auto cf = dynamic_cast<core::CompositeFigure*>(f)) {
+            for (auto& child : cf->children) {
+                applyRef(child.figure.get(), c, applyRef);
+            }
+        }
+    };
+    applyColor(selectedFigure, newColor, applyColor);
   }
   ImGui::Spacing();
 
@@ -240,12 +258,27 @@ bool PropertiesPanel::render(core::Scene &scene, core::Viewport &viewport) {
           }
         }
 
-        bool anyLengthChanged = false;
+        bool anyLengthChangedManually = false;
 
         for (size_t i = 0; i < selectedFigure->edges.size(); ++i) {
           ImGui::PushID(static_cast<int>(i));
 
-          if (hasLengths && i < displayLengths.size()) {
+          if (auto circ = dynamic_cast<core::Circle*>(selectedFigure)) {
+            // Circle has special radius properties instead of side lengths
+            ImGui::Text("Circle Setup");
+            float rx = circ->getRadiusX();
+            float ry = circ->getRadiusY();
+            bool rChanged = false;
+            ImGui::SetNextItemWidth(-1.f);
+            if (ImGui::InputFloat("Radius X", &rx, 1.f, 10.f, "%.1f", ImGuiInputTextFlags_EnterReturnsTrue)) rChanged = true;
+            ImGui::SetNextItemWidth(-1.f);
+            if (ImGui::InputFloat("Radius Y", &ry, 1.f, 10.f, "%.1f", ImGuiInputTextFlags_EnterReturnsTrue)) rChanged = true;
+            if (rChanged) {
+               if (rx < 1.f) rx = 1.f;
+               if (ry < 1.f) ry = 1.f;
+               circ->setRadius(rx, ry);
+            }
+          } else if (hasLengths && i < displayLengths.size()) {
             bool isLocked = lockedSides[i];
             if (ImGui::Checkbox("##lock", &isLocked)) {
               lockedSides[i] = isLocked;
@@ -259,7 +292,9 @@ bool PropertiesPanel::render(core::Scene &scene, core::Viewport &viewport) {
             ImGui::SameLine();
           }
 
-          ImGui::Text("%s", selectedFigure->getSideName(static_cast<int>(i)));
+          if (!dynamic_cast<core::Circle*>(selectedFigure)) {
+              ImGui::Text("%s", selectedFigure->getSideName(static_cast<int>(i)));
+          }
 
           if (hasLengths && i < displayLengths.size()) {
             ImGui::SetNextItemWidth(-1.f);
@@ -272,7 +307,7 @@ bool PropertiesPanel::render(core::Scene &scene, core::Viewport &viewport) {
               if (lockedSides[i]) {
                 lockedLengths[i] = displayLengths[i];
               }
-              anyLengthChanged = true;
+              anyLengthChangedManually = true;
             }
           }
 
@@ -280,6 +315,8 @@ bool PropertiesPanel::render(core::Scene &scene, core::Viewport &viewport) {
           if (ImGui::DragFloat("Width", &width, 0.5f, 0.f, 100.f)) {
             selectedFigure->edges[i].width = width;
           }
+
+          (void)0; // vertex angles shown in dedicated section below
 
           float eCol[4] = {selectedFigure->edges[i].color.r / 255.f,
                            selectedFigure->edges[i].color.g / 255.f,
@@ -299,7 +336,7 @@ bool PropertiesPanel::render(core::Scene &scene, core::Viewport &viewport) {
           ImGui::Spacing();
         }
 
-        if (anyLengthChanged) {
+        if (anyLengthChangedManually) {
           selectedFigure->applyScale();
           bool anyLockedNow = false;
           for (bool l : selectedFigure->lockedSides) {
@@ -319,6 +356,75 @@ bool PropertiesPanel::render(core::Scene &scene, core::Viewport &viewport) {
     ImGui::Spacing();
   }
 
+  // 6b. Vertex Angles (only for PolylineFigure)
+  if (auto* pf = dynamic_cast<core::PolylineFigure*>(selectedFigure)) {
+      int vn = static_cast<int>(pf->getVertices().size());
+      if (!dynamic_cast<core::Circle*>(selectedFigure) && vn >= 3) {
+          ImGui::Separator();
+          if (ImGui::TreeNodeEx("Vertex Angles", ImGuiTreeNodeFlags_DefaultOpen)) {
+              auto& lockedAng  = pf->lockedAngles;
+              auto& lockedAngV = pf->lockedAngleValues;
+              // Initialize or reset if sizes changed or values are stale (> 360 means old formula)
+              bool needsReset = ((int)lockedAng.size() != vn);
+              if (!needsReset) {
+                  for (float v : lockedAngV) {
+                      if (v < 0.f || v > 360.f) { needsReset = true; break; }
+                  }
+              }
+              if (needsReset) {
+                  lockedAng.assign(vn, false);
+                  lockedAngV.resize(vn, 0.f);
+                  for (int i = 0; i < vn; ++i)
+                      lockedAngV[i] = pf->getVertexAngle(i);
+              }
+              for (int i = 0; i < vn; ++i) {
+                  ImGui::PushID(static_cast<int>(5000 + i));
+                  bool isLocked = lockedAng[i];
+                  if (ImGui::Checkbox("##alock", &isLocked)) {
+                      lockedAng[i] = isLocked;
+                      if (isLocked) lockedAngV[i] = pf->getVertexAngle(i);
+                  }
+                  if (ImGui::IsItemHovered()) ImGui::SetTooltip("Lock vertex angle");
+                  ImGui::SameLine();
+                  ImGui::Text("V%d:", i);
+                  ImGui::SameLine();
+
+                  if (isLocked) {
+                      ImGui::SetNextItemWidth(-1.f);
+                      ImGui::InputFloat("##va", &lockedAngV[i], 0.f, 0.f, "%.1f deg");
+                  } else {
+                      float angle = pf->getVertexAngle(i);
+                      ImGui::SetNextItemWidth(-1.f);
+                      if (ImGui::DragFloat("##va", &angle, 0.5f, 1.f, 359.f, "%.1f\xc2\xb0")) {
+                          pf->setVertexAngle(i, angle);
+                      }
+                  }
+                  ImGui::PopID();
+              }
+              // One Apply button for all locked angles
+              bool anyLocked = false;
+              for (bool b : lockedAng) if (b) { anyLocked = true; break; }
+              if (anyLocked) {
+                  if (ImGui::Button("Apply Locked Angles", ImVec2(-1.f, 0.f))) {
+                      for (int i = 0; i < vn; ++i) {
+                          if (lockedAngV[i] < 1.f)   lockedAngV[i] = 1.f;
+                          if (lockedAngV[i] > 359.f) lockedAngV[i] = 359.f;
+                      }
+                      // Run many iterations so all locked angles converge simultaneously
+                      for (int iter = 0; iter < 100; ++iter) {
+                          for (int i = 0; i < vn; ++i) {
+                              if (!lockedAng[i]) continue;
+                              pf->setVertexAngle(i, lockedAngV[i]);
+                          }
+                      }
+                  }
+              }
+              ImGui::TreePop();
+          }
+          ImGui::Spacing();
+      }
+  }
+
   // 5. Bounding Box (Read only)
   ImGui::Separator();
   ImGui::Text("Bounding Box");
@@ -326,6 +432,105 @@ bool PropertiesPanel::render(core::Scene &scene, core::Viewport &viewport) {
   ImGui::TextDisabled("TL: %.1f, %.1f", bounds.left, bounds.top);
   ImGui::TextDisabled("BR: %.1f, %.1f", bounds.left + bounds.width,
                       bounds.top + bounds.height);
+
+  if (!compoundSelection.empty()) {
+      ImGui::Separator();
+      ImGui::Text("COMPOUND SELECTION (%zu)", compoundSelection.size());
+      if (ImGui::Button("Group Selected", ImVec2(-1, 0))) {
+          auto newCompound = std::make_unique<core::CompositeFigure>();
+          newCompound->figureName = "Grouped Figure";
+          
+          sf::Vector2f center(0.f, 0.f);
+          for (auto* fig : compoundSelection) {
+              center += fig->anchor + fig->parentOrigin;
+          }
+          center.x /= compoundSelection.size();
+          center.y /= compoundSelection.size();
+          newCompound->anchor = center;
+
+          for (auto* fig : compoundSelection) {
+              sf::Vector2f offset = fig->anchor + fig->parentOrigin - center;
+              float rot = fig->rotationAngle;
+              newCompound->insertChild(scene.extractFigure(fig), newCompound->children.size(), offset, rot);
+          }
+          auto* ptr = newCompound.get();
+          scene.addFigure(std::move(newCompound));
+          scene.setSelectedFigure(ptr);
+          compoundSelection.clear();
+      }
+      ImGui::Spacing();
+  } else if (auto cf = dynamic_cast<core::CompositeFigure*>(selectedFigure)) {
+      if (!cf->children.empty()) {
+          ImGui::Separator();
+          ImGui::Text("Name: %s", cf->figureName.c_str());
+          ImGui::Text("Child Figures (%zu)", cf->children.size());
+
+          // Solid Group toggle
+          bool isSolid = cf->isSolidGroup;
+          if (ImGui::Checkbox("Solid Group", &isSolid)) {
+              cf->isSolidGroup = isSolid;
+          }
+          if (ImGui::IsItemHovered()) {
+              ImGui::SetTooltip("Subfigures snap to each other —\ncannot be pulled apart.");
+          }
+          ImGui::Text("Global Outline Properties");
+          static float globalOutlineWidth = 1.0f;
+          if (ImGui::DragFloat("Outline Width##Global", &globalOutlineWidth, 0.5f, 0.f, 100.f)) {
+              auto applyOutline = [](core::Figure* f, float w, auto& applyRef) -> void {
+                  for (auto& edge : f->edges) edge.width = w;
+                  if (auto cFig = dynamic_cast<core::CompositeFigure*>(f)) {
+                      for (auto& child : cFig->children) applyRef(child.figure.get(), w, applyRef);
+                  }
+              };
+              applyOutline(cf, globalOutlineWidth, applyOutline);
+          }
+          static float globalOutlineCol[4] = {0.f, 0.f, 0.f, 1.f};
+          if (ImGui::ColorEdit4("Outline Color##Global", globalOutlineCol)) {
+              sf::Color newColor(static_cast<sf::Uint8>(globalOutlineCol[0] * 255.f),
+                                 static_cast<sf::Uint8>(globalOutlineCol[1] * 255.f),
+                                 static_cast<sf::Uint8>(globalOutlineCol[2] * 255.f),
+                                 static_cast<sf::Uint8>(globalOutlineCol[3] * 255.f));
+              auto applyOutlineColor = [](core::Figure* f, sf::Color c, auto& applyRef) -> void {
+                  for (auto& edge : f->edges) edge.color = c;
+                  if (auto cFig = dynamic_cast<core::CompositeFigure*>(f)) {
+                      for (auto& child : cFig->children) applyRef(child.figure.get(), c, applyRef);
+                  }
+              };
+              applyOutlineColor(cf, newColor, applyOutlineColor);
+          }
+          ImGui::Separator();
+          
+          for (size_t i = 0; i < cf->children.size(); ++i) {
+              ImGui::PushID(static_cast<int>(2000 + i));
+              ImGui::Text("Child %zu", i);
+              float off[2] = {cf->children[i].figure->anchor.x, cf->children[i].figure->anchor.y};
+              if (ImGui::DragFloat2("Rel Pos", off, 1.0f)) {
+                  cf->children[i].figure->anchor = {off[0], off[1]};
+              }
+              ImGui::DragFloat("Rel Rot", &cf->children[i].figure->rotationAngle, 1.0f);
+              if (ImGui::Button("Extract")) {
+                  auto extracted = cf->extractChild(cf->children[i].figure.get());
+                  if (extracted) {
+                      // extractChild already set anchor to the absolute world position.
+                      // Accumulate parent rotation and scale so the figure looks the same.
+                      float parentAbsRot = cf->getAbsoluteRotation();
+                      sf::Vector2f parentAbsScale = cf->getAbsoluteScale();
+                      extracted->rotationAngle += parentAbsRot;
+                      extracted->scale.x *= parentAbsScale.x;
+                      extracted->scale.y *= parentAbsScale.y;
+                      scene.addFigure(std::move(extracted));
+                  }
+              }
+              ImGui::SameLine();
+              if (ImGui::Button("Delete")) {
+                  cf->extractChild(cf->children[i].figure.get());
+                  // Extracted unique_ptr drops out of scope = deleted
+              }
+              ImGui::PopID();
+              ImGui::Spacing();
+          }
+      }
+  }
 
   ImGui::End();
   return fitRequested;

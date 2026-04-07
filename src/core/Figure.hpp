@@ -1,9 +1,15 @@
 #pragma once
 
 #include <SFML/Graphics.hpp>
+#include <cstdint>
+#include <memory>
+#include <string>
 #include <vector>
+#include <iostream>
 
 namespace core {
+
+class CompositeFigure;
 
 struct Edge {
   float width = 1.0f;
@@ -13,12 +19,23 @@ struct Edge {
 class Figure {
 public:
   virtual ~Figure() = default;
+  virtual std::unique_ptr<Figure> clone() const = 0;
+  virtual std::string typeName() const = 0;
+
+  virtual void serialize(std::ostream& out, int indent) const;
+  virtual bool deserialize(const std::string& prop, std::istream& in);
+
+  // Stable unique identifier (assigned by Scene). 0 means "unassigned".
+  std::uint64_t id = 0;
 
   // Anchor point (relative to parentOrigin)
   sf::Vector2f anchor{0.f, 0.f};
 
   // Parent origin offset
   sf::Vector2f parentOrigin{0.f, 0.f};
+
+  // Pointer to parent composite figure if this is a child
+  CompositeFigure* parentFigure = nullptr;
 
   // Fill color
   sf::Color fillColor = sf::Color::White;
@@ -34,16 +51,24 @@ public:
   std::vector<Edge> edges;
 
   // Get the bounding box of the figure based on its absolute vertices
-  sf::FloatRect getBoundingBox() const;
+  virtual sf::FloatRect getBoundingBox() const;
 
   // Get the unscaled local bounding box based on relative vertices
-  sf::FloatRect getLocalBoundingBox() const;
+  virtual sf::FloatRect getLocalBoundingBox() const;
+
+  // Get the precise outer stroke points used for bounds calculation
+  std::vector<sf::Vector2f> getStrokeOuterPoints(bool absolute) const;
 
   // Get relative vertices (offset from anchor)
   virtual const std::vector<sf::Vector2f> &getVertices() const {
     return m_vertices;
   }
   virtual std::vector<sf::Vector2f> &getVerticesMutable() { return m_vertices; }
+
+  // Get absolute transforms including parent hierarchy
+  sf::Vector2f getAbsoluteAnchor() const;
+  float getAbsoluteRotation() const;
+  sf::Vector2f getAbsoluteScale() const;
 
   // Get absolute vertex position including anchor and rotation
   sf::Vector2f getAbsoluteVertex(sf::Vector2f relative) const;
@@ -59,15 +84,15 @@ public:
 
   // Reset the anchor to the center of the local bounding box without moving the
   // figure
-  void resetAnchor();
+  virtual void resetAnchor();
 
   // Set a new anchor point while keeping the figure's absolute position
   // invariant
-  void setAnchorKeepAbsolute(sf::Vector2f newAnchor);
+  virtual void setAnchorKeepAbsolute(sf::Vector2f newAnchor);
 
   // Apply the current scale factor permanently to the figure's vertices
   // and reset the scale vector to (1, 1).
-  void applyScale();
+  virtual void applyScale();
 
   // Return true if all edges should be styled identically in the UI
   virtual bool hasUniformEdge() const { return false; }
@@ -88,8 +113,10 @@ public:
   std::vector<bool> lockedSides;
   std::vector<float> lockedLengths;
 
-  // Generic geometric solver to force exact side lengths regardless of shape
-  // type
+  std::vector<bool> lockedAngles;
+  std::vector<float> lockedAngleValues;
+
+  // Generic geometric solver to force exact side lengths regardless of shape type
   void applyGenericSideLengths(const std::vector<float> &lengths);
 
 protected:
