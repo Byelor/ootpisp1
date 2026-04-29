@@ -1,0 +1,81 @@
+figure polyline
+id 3
+anchor 762.5 377
+parent_origin 0 0
+rotation 0
+scale 1 1
+fill 150 150 150 200
+edges 17
+  edge 0 width 2 color 0 0 0 255
+  edge 1 width 2 color 0 0 0 255
+  edge 2 width 2 color 0 0 0 255
+  edge 3 width 2 color 0 0 0 255
+  edge 4 width 2 color 0 0 0 255
+  edge 5 width 2 color 0 0 0 255
+  edge 6 width 2 color 0 0 0 255
+  edge 7 width 2 color 0 0 0 255
+  edge 8 width 2 color 0 0 0 255
+  edge 9 width 2 color 0 0 0 255
+  edge 10 width 2 color 0 0 0 255
+  edge 11 width 2 color 0 0 0 255
+  edge 12 width 2 color 0 0 0 255
+  edge 13 width 2 color 0 0 0 255
+  edge 14 width 2 color 0 0 0 255
+  edge 15 width 2 color 0 0 0 255
+  edge 16 width 2 color 0 0 0 255
+locked_sides 17
+  lock_s 0 0 348.633
+  lock_s 1 0 320.128
+  lock_s 2 0 294.287
+  lock_s 3 0 0
+  lock_s 4 0 94.0691
+  lock_s 5 0 134.078
+  lock_s 6 0 359.701
+  lock_s 7 0 211.634
+  lock_s 8 0 107.564
+  lock_s 9 0 119.817
+  lock_s 10 0 339.706
+  lock_s 11 0 164.73
+  lock_s 12 0 97.2677
+  lock_s 13 0 121.918
+  lock_s 14 0 153.114
+  lock_s 15 0 38
+  lock_s 16 0 25
+locked_angles 17
+  lock_a 0 0 158.601
+  lock_a 1 0 94.4353
+  lock_a 2 0 72.6252
+  lock_a 3 0 0
+  lock_a 4 0 0
+  lock_a 5 0 293.935
+  lock_a 6 0 270.141
+  lock_a 7 0 254.317
+  lock_a 8 0 80.6382
+  lock_a 9 0 103.836
+  lock_a 10 0 129.169
+  lock_a 11 0 145.201
+  lock_a 12 0 133.948
+  lock_a 13 0 206.116
+  lock_a 14 0 115.104
+  lock_a 15 0 203.887
+  lock_a 16 0 126.87
+name Polygon
+vertices_base 17
+  vertex 0 244.5 -183
+  vertex 1 -91.5 -276
+  vertex 2 -200.5 25
+  vertex 3 -316.5 9
+  vertex 4 -336.5 32
+  vertex 5 -217.5 36
+  vertex 6 -366.5 37
+  vertex 7 -389.5 72
+  vertex 8 -338.5 111
+  vertex 9 -326.5 142
+  vertex 10 -260.5 242
+  vertex 11 77.5 276
+  vertex 12 221.5 196
+  vertex 13 246.5 102
+  vertex 14 326.5 10
+  vertex 15 264.5 -130
+  vertex 16 264.5 -168
+end

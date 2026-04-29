@@ -189,25 +189,26 @@ int main() {
     currentTool = ui::Tool::Select;
   };
 
-  // Auto-load figure templates from figures/ directory
+  // Auto-load figure templates from figures/ directory.
+  // The FILENAME stem is always used as the display name so that every file
+  // gets a unique, predictable entry regardless of what figureName is stored
+  // inside the .fig (which can become stale or duplicate over time).
   {
     auto templatePaths = core::SceneSerializer::listFigureTemplates("figures");
     for (const auto& path : templatePaths) {
         auto fig = core::SceneSerializer::loadFigureTemplate(path);
         if (fig) {
+            // Key = filename stem (e.g. "df" for "df.fig")
             std::string name = fs::path(path).stem().string();
-            // Set the figure name if it's a polyline
+
+            // Sync the figure's internal name to the filename so it's
+            // consistent when the template is later placed on the canvas.
             if (fig->typeName() == "polyline") {
-                auto* pf = static_cast<core::PolylineFigure*>(fig.get());
-                if (pf->figureName.empty() || pf->figureName == "Custom" || pf->figureName == "Polygon") {
-                    pf->figureName = name;
-                }
-                name = pf->figureName;
+                static_cast<core::PolylineFigure*>(fig.get())->figureName = name;
             } else if (fig->typeName() == "composite") {
-                auto* cf = static_cast<core::CompositeFigure*>(fig.get());
-                if (cf->figureName.empty()) cf->figureName = name;
-                name = cf->figureName;
+                static_cast<core::CompositeFigure*>(fig.get())->figureName = name;
             }
+
             int customId = (int)userRegistry.size();
             toolbar.customTools.push_back({name, customId});
             userRegistry.push_back(std::move(fig));
@@ -216,27 +217,9 @@ int main() {
     }
   }
 
-  // Add initial demo figures (Circle + Polyline)
-  {
-    auto circle = std::make_unique<core::Circle>(75.f, 75.f);
-    circle->fillColor = sf::Color(100, 180, 255);
-    circle->edges[0].width = 3.f;
-    circle->edges[0].color = sf::Color(30, 80, 160);
-    circle->anchor = sf::Vector2f(300.f, 300.f);
-    scene.addFigure(std::move(circle));
 
-    auto poly = std::make_unique<core::PolylineFigure>();
-    poly->figureName = "Demo Polyline";
-    std::vector<sf::Vector2f> verts = {
-        {-80.f, 0.f}, {-20.f, -80.f}, {80.f, -40.f}, {60.f, 60.f}, {-40.f, 60.f}
-    };
-    poly->setVertices(verts);
-    poly->edges.resize(verts.size());
-    poly->fillColor = sf::Color(255, 200, 80);
-    for (auto& e : poly->edges) { e.width = 2.f; e.color = sf::Color(160, 100, 0); }
-    poly->anchor = sf::Vector2f(600.f, 300.f);
-    scene.addFigure(std::move(poly));
-  }
+
+
 
   while (window.isOpen()) {
     sf::Event event;
@@ -533,8 +516,15 @@ int main() {
                 }
               }
             } else if (currentTool == ui::Tool::Polyline) {
+               // Reset double-click state when starting a new polyline so that
+               // a stray click from the previous tool mode isn't treated as
+               // a double-click here.
+               if (currentPolylineVertices.empty()) {
+                   wasClicked = false;
+               }
+
                bool doubleClicked = false;
-               if (wasClicked && clickClock.getElapsedTime().asSeconds() < 0.3f) {
+               if (wasClicked && clickClock.getElapsedTime().asSeconds() < 0.25f) {
                    doubleClicked = true;
                    wasClicked = false;
                } else {
@@ -550,18 +540,22 @@ int main() {
                        if (std::abs(delta.x) > std::abs(delta.y)) snapPos = {mousePos.x, lastPos.y};
                        else snapPos = {lastPos.x, mousePos.y};
                    }
-                   
-                   // Auto close if clicking near first vertex
+
+                   // Auto-close ONLY when clicking near the first vertex (or double-click near it).
+                   // Removed bare "|| doubleClicked" to prevent accidental closure when
+                   // the user simply clicks two points quickly far from the start.
                    if (currentPolylineVertices.size() > 2) {
                        float dist = std::hypot(snapPos.x - currentPolylineVertices.front().x,
                                                snapPos.y - currentPolylineVertices.front().y);
-                       if (dist < 10.f / viewport.zoom || doubleClicked) {
+                       float closeThreshold = 12.f / viewport.zoom;
+                       if (dist < closeThreshold || (doubleClicked && dist < closeThreshold * 4.f)) {
                            finishCurrentPolyline();
                            continue;
                        }
                    }
                }
                currentPolylineVertices.push_back(snapPos);
+
             } else if (currentTool == ui::Tool::CompoundSelect) {
                core::Figure* hit = scene.hitTest(mousePos);
                if (hit) {
