@@ -17,6 +17,8 @@ public:
 
 private:
   bool m_lockProportions = true;
+  char m_templateName[256] = "";
+  std::string m_templateSaveStatus;
 
 public:
   bool m_lockAnchor = false;

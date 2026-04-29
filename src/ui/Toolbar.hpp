@@ -10,11 +10,6 @@ namespace ui {
 
 enum class Tool {
   Select,
-  Rectangle,
-  Triangle,
-  Hexagon,
-  Rhombus,
-  Trapezoid,
   Circle,
   Polyline,
   CompoundSelect,

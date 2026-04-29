@@ -1,0 +1,33 @@
+figure polyline
+id 2
+anchor 600 301
+parent_origin 0 0
+rotation 0
+scale 1 1
+fill 255 200 80 255
+edges 5
+  edge 0 width 2 color 160 100 0 255
+  edge 1 width 2 color 160 100 0 255
+  edge 2 width 2 color 160 100 0 255
+  edge 3 width 2 color 160 100 0 255
+  edge 4 width 2 color 160 100 0 255
+locked_sides 5
+  lock_s 0 0 100
+  lock_s 1 0 107.703
+  lock_s 2 0 101.98
+  lock_s 3 0 100
+  lock_s 4 0 72.111
+locked_angles 5
+  lock_a 0 0 109.44
+  lock_a 1 0 105.068
+  lock_a 2 0 100.491
+  lock_a 3 0 101.31
+  lock_a 4 0 123.69
+name Demo Polyline
+vertices_base 5
+  vertex 0 -80 0
+  vertex 1 -20 -80
+  vertex 2 80 -40
+  vertex 3 60 60
+  vertex 4 -40 60
+end

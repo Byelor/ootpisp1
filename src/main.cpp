@@ -4,6 +4,7 @@
 #include "core/Scene.hpp"
 #include "core/Viewport.hpp"
 #include "core/MathUtils.hpp"
+#include "core/SceneSerializer.hpp"
 #include "ui/Toolbar.hpp"
 #include "ui/PropertiesPanel.hpp"
 #include "ui/CreateFigureModal.hpp"
@@ -11,10 +12,13 @@
 #include <SFML/Graphics.hpp>
 #include <SFML/Window.hpp>
 #include <cmath>
+#include <filesystem>
 #include <imgui-SFML.h>
 #include <imgui.h>
 #include <iostream>
 #include <memory>
+
+namespace fs = std::filesystem;
 
 using namespace core;
 using namespace core::math;
@@ -128,32 +132,12 @@ int main() {
     height = std::max(height, 50.f);
 
     std::unique_ptr<core::Figure> fig;
-    if (tool == ui::Tool::Rectangle) {
-      fig = std::make_unique<core::Rectangle>(100.f, 100.f);
-      fig->scale = sf::Vector2f(width / 100.f, height / 100.f);
-      fig->applyScale();
-    } else if (tool == ui::Tool::Triangle) {
-      fig = std::make_unique<core::Triangle>(100.f, 100.f);
-      fig->scale = sf::Vector2f(width / 100.f, height / 100.f);
-      fig->applyScale();
-    } else if (tool == ui::Tool::Hexagon) {
-      fig = std::make_unique<core::Hexagon>(100.f, 100.f);
-      fig->scale = sf::Vector2f(width / 100.f, height / 100.f);
-      fig->applyScale();
-    } else if (tool == ui::Tool::Rhombus) {
-      fig = std::make_unique<core::Rhombus>(100.f, 100.f);
-      fig->scale = sf::Vector2f(width / 100.f, height / 100.f);
-      fig->applyScale();
-    } else if (tool == ui::Tool::Trapezoid) {
-      fig = std::make_unique<core::Trapezoid>(60.f, 100.f, 100.f);
-      fig->scale = sf::Vector2f(width / 100.f, height / 100.f);
-      fig->applyScale();
-    } else if (tool == ui::Tool::Circle) {
+    if (tool == ui::Tool::Circle) {
       // Circle constructor takes radiusX, radiusY so divide by 2
       fig = std::make_unique<core::Circle>(width / 2.f, height / 2.f);
       fig->scale = sf::Vector2f(1.f, 1.f);
       fig->applyScale();
-    } else if (tool == ui::Tool::Custom && selectedCustomToolId >= 0 && selectedCustomToolId < userRegistry.size()) {
+    } else if (tool == ui::Tool::Custom && selectedCustomToolId >= 0 && selectedCustomToolId < (int)userRegistry.size()) {
         fig = userRegistry[selectedCustomToolId]->clone();
         sf::FloatRect bounds = fig->getLocalBoundingBox();
         if (bounds.width > 0 && bounds.height > 0) {
@@ -205,28 +189,53 @@ int main() {
     currentTool = ui::Tool::Select;
   };
 
-  // Add initial colored figures
+  // Auto-load figure templates from figures/ directory
   {
-    std::vector<sf::Color> colors = {
-        sf::Color(255, 100, 100), sf::Color(100, 255, 100),
-        sf::Color(100, 100, 255), sf::Color(255, 255, 100),
-        sf::Color(255, 100, 255), sf::Color(100, 255, 255)};
-    std::vector<ui::Tool> tempTools = {ui::Tool::Rectangle, ui::Tool::Triangle,
-                                       ui::Tool::Hexagon,   ui::Tool::Rhombus,
-                                       ui::Tool::Trapezoid, ui::Tool::Circle};
-
-    for (size_t i = 0; i < tempTools.size(); ++i) {
-      auto fig = createFigure(tempTools[i], 150.f, 150.f);
-      fig->fillColor = colors[i];
-      // Give edges varied colors
-      for (size_t j = 0; j < fig->edges.size(); ++j) {
-        fig->edges[j].color = colors[(i + j + 1) % colors.size()];
-        fig->edges[j].width = 4.f;
-      }
-      fig->anchor =
-          sf::Vector2f(250.f + (i % 3) * 250.f, 250.f + (i / 3) * 250.f);
-      scene.addFigure(std::move(fig));
+    auto templatePaths = core::SceneSerializer::listFigureTemplates("figures");
+    for (const auto& path : templatePaths) {
+        auto fig = core::SceneSerializer::loadFigureTemplate(path);
+        if (fig) {
+            std::string name = fs::path(path).stem().string();
+            // Set the figure name if it's a polyline
+            if (fig->typeName() == "polyline") {
+                auto* pf = static_cast<core::PolylineFigure*>(fig.get());
+                if (pf->figureName.empty() || pf->figureName == "Custom" || pf->figureName == "Polygon") {
+                    pf->figureName = name;
+                }
+                name = pf->figureName;
+            } else if (fig->typeName() == "composite") {
+                auto* cf = static_cast<core::CompositeFigure*>(fig.get());
+                if (cf->figureName.empty()) cf->figureName = name;
+                name = cf->figureName;
+            }
+            int customId = (int)userRegistry.size();
+            toolbar.customTools.push_back({name, customId});
+            userRegistry.push_back(std::move(fig));
+            std::cout << "[Templates] Loaded: " << path << " as '" << name << "'\n";
+        }
     }
+  }
+
+  // Add initial demo figures (Circle + Polyline)
+  {
+    auto circle = std::make_unique<core::Circle>(75.f, 75.f);
+    circle->fillColor = sf::Color(100, 180, 255);
+    circle->edges[0].width = 3.f;
+    circle->edges[0].color = sf::Color(30, 80, 160);
+    circle->anchor = sf::Vector2f(300.f, 300.f);
+    scene.addFigure(std::move(circle));
+
+    auto poly = std::make_unique<core::PolylineFigure>();
+    poly->figureName = "Demo Polyline";
+    std::vector<sf::Vector2f> verts = {
+        {-80.f, 0.f}, {-20.f, -80.f}, {80.f, -40.f}, {60.f, 60.f}, {-40.f, 60.f}
+    };
+    poly->setVertices(verts);
+    poly->edges.resize(verts.size());
+    poly->fillColor = sf::Color(255, 200, 80);
+    for (auto& e : poly->edges) { e.width = 2.f; e.color = sf::Color(160, 100, 0); }
+    poly->anchor = sf::Vector2f(600.f, 300.f);
+    scene.addFigure(std::move(poly));
   }
 
   while (window.isOpen()) {
@@ -263,18 +272,10 @@ int main() {
           }
         } else if (event.key.code == sf::Keyboard::V)
           currentTool = ui::Tool::Select;
-        else if (event.key.code == sf::Keyboard::R)
-          currentTool = ui::Tool::Rectangle;
-        else if (event.key.code == sf::Keyboard::T)
-          currentTool = ui::Tool::Triangle;
-        else if (event.key.code == sf::Keyboard::H)
-          currentTool = ui::Tool::Hexagon;
-        else if (event.key.code == sf::Keyboard::D)
-          currentTool = ui::Tool::Rhombus;
-        else if (event.key.code == sf::Keyboard::Z)
-          currentTool = ui::Tool::Trapezoid;
         else if (event.key.code == sf::Keyboard::C)
           currentTool = ui::Tool::Circle;
+        else if (event.key.code == sf::Keyboard::P)
+          currentTool = ui::Tool::Polyline;
         else if (event.key.code == sf::Keyboard::Escape) {
           if (isNodeEditMode) {
             isNodeEditMode = false;
@@ -642,22 +643,14 @@ int main() {
               float width = std::abs(dx);
               float height = std::abs(dy);
 
-              // Constrain if Shift is held
+              // Constrain if Shift is held — always square
               if (sf::Keyboard::isKeyPressed(sf::Keyboard::LShift) ||
                   sf::Keyboard::isKeyPressed(sf::Keyboard::RShift)) {
-                if (currentTool == ui::Tool::Triangle) {
-                  // Equilateral triangle: height = width * sqrt(3)/2
-                  width = std::max(width, height / (std::sqrt(3.f) / 2.f));
-                  height = width * std::sqrt(3.f) / 2.f;
-                  mousePos.x = createStartPos.x + ((dx >= 0) ? width  : -width);
-                  mousePos.y = createStartPos.y + ((dy >= 0) ? height : -height);
-                } else {
-                  float maxDim = std::max(width, height);
-                  width = maxDim;
-                  height = maxDim;
-                  mousePos.x = createStartPos.x + ((dx >= 0) ? maxDim : -maxDim);
-                  mousePos.y = createStartPos.y + ((dy >= 0) ? maxDim : -maxDim);
-                }
+                float maxDim = std::max(width, height);
+                width = maxDim;
+                height = maxDim;
+                mousePos.x = createStartPos.x + ((dx >= 0) ? maxDim : -maxDim);
+                mousePos.y = createStartPos.y + ((dy >= 0) ? maxDim : -maxDim);
               }
 
               // Default size if very small
@@ -987,6 +980,14 @@ int main() {
     bool fitRequested = propertiesPanel.render(scene, viewport, compoundSelection, userRegistry, toolbar);
     layerPanel.render(scene);
     createModal.render(scene, toolbar.customTools, userRegistry);
+    // "Draw on Canvas" requested from the modal → switch to Polyline tool
+    // and pre-seed the starting vertex at the right-click position.
+    if (createModal.drawOnCanvasRequested) {
+        createModal.drawOnCanvasRequested = false;
+        currentTool = ui::Tool::Polyline;
+        currentPolylineVertices.clear();
+        currentPolylineVertices.push_back(createModal.getCreatePos());
+    }
 
     if (toolbar.showCustomFigManager) {
         ImGui::SetNextWindowSizeConstraints(ImVec2(300, 200), ImVec2(600, 800));
@@ -1417,21 +1418,14 @@ int main() {
       float width = std::abs(dx);
       float height = std::abs(dy);
 
-      // Constrain preview if Shift is held
+      // Constrain preview if Shift is held — always square
       if (sf::Keyboard::isKeyPressed(sf::Keyboard::LShift) ||
           sf::Keyboard::isKeyPressed(sf::Keyboard::RShift)) {
-        if (currentTool == ui::Tool::Triangle) {
-          width = std::max(width, height / (std::sqrt(3.f) / 2.f));
-          height = width * std::sqrt(3.f) / 2.f;
-          mousePos.x = createStartPos.x + ((dx >= 0) ? width  : -width);
-          mousePos.y = createStartPos.y + ((dy >= 0) ? height : -height);
-        } else {
-          float maxDim = std::max(width, height);
-          width = maxDim;
-          height = maxDim;
-          mousePos.x = createStartPos.x + ((dx >= 0) ? maxDim : -maxDim);
-          mousePos.y = createStartPos.y + ((dy >= 0) ? maxDim : -maxDim);
-        }
+        float maxDim = std::max(width, height);
+        width = maxDim;
+        height = maxDim;
+        mousePos.x = createStartPos.x + ((dx >= 0) ? maxDim : -maxDim);
+        mousePos.y = createStartPos.y + ((dy >= 0) ? maxDim : -maxDim);
       }
 
       sf::RectangleShape preview;

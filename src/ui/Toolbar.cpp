@@ -40,9 +40,6 @@ bool Toolbar::render(Tool &currentTool, core::Scene& scene, int& selectedCustomT
       static char loadPath[512] = "scene.scene";
       ImGui::InputText("path", loadPath, sizeof(loadPath));
       if (ImGui::Button("Load", ImVec2(120, 0))) {
-          // core::Scene doesn't have clear(), but scene array does. 
-          // Wait, scene.clear() might not exist. Let's see if scene.m_figures is accessible.
-          // Better: just remove all figures.
           while(scene.figureCount() > 0) {
               scene.removeFigure(scene.getFigure(0));
           }
@@ -57,7 +54,6 @@ bool Toolbar::render(Tool &currentTool, core::Scene& scene, int& selectedCustomT
       ImGui::EndPopup();
   }
 
-  // Separator can be drawn vertically or omitted, we'll just omit or add spacing
   ImGui::Dummy(ImVec2(10, 0));
   ImGui::SameLine();
 
@@ -84,16 +80,6 @@ bool Toolbar::render(Tool &currentTool, core::Scene& scene, int& selectedCustomT
   };
 
   renderToolButton("Select", Tool::Select);
-  ImGui::SameLine();
-  renderToolButton("Rect", Tool::Rectangle);
-  ImGui::SameLine();
-  renderToolButton("Tri", Tool::Triangle);
-  ImGui::SameLine();
-  renderToolButton("Hex", Tool::Hexagon);
-  ImGui::SameLine();
-  renderToolButton("Rhombus", Tool::Rhombus);
-  ImGui::SameLine();
-  renderToolButton("Trapezoid", Tool::Trapezoid);
   ImGui::SameLine();
   renderToolButton("Circle", Tool::Circle);
   ImGui::SameLine();

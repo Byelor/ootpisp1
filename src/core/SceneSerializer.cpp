@@ -3,8 +3,11 @@
 #include <sstream>
 #include <iostream>
 #include <string>
+#include <filesystem>
 #include "Figures.hpp"
 #include "PolylineFigure.hpp"
+
+namespace fs = std::filesystem;
 
 namespace core {
 
@@ -44,15 +47,22 @@ std::unique_ptr<Figure> SceneSerializer::readFigure(std::istream& in) {
     
     std::unique_ptr<Figure> fig;
     
-    // Factory
-    if (type == "rectangle") fig = std::make_unique<core::Rectangle>(100.f, 100.f);
-    else if (type == "triangle") fig = std::make_unique<core::Triangle>(100.f, 100.f);
-    else if (type == "hexagon") fig = std::make_unique<core::Hexagon>(100.f, 100.f);
-    else if (type == "rhombus") fig = std::make_unique<core::Rhombus>(100.f, 100.f);
-    else if (type == "trapezoid") fig = std::make_unique<core::Trapezoid>(60.f, 100.f, 100.f);
-    else if (type == "circle") fig = std::make_unique<core::Circle>(50.f, 50.f);
+    // Factory — only circle, polyline and composite remain
+    if (type == "circle") fig = std::make_unique<core::Circle>(50.f, 50.f);
     else if (type == "polyline") fig = std::make_unique<core::PolylineFigure>();
-    else fig = std::make_unique<core::CompositeFigure>(); // fallback or explicit "composite"
+    else if (type == "composite") fig = std::make_unique<core::CompositeFigure>();
+    else {
+        // Unknown type (e.g. old rectangle/triangle) — skip until "end"
+        std::cerr << "[SceneSerializer] Unknown figure type '" << type << "', skipping.\n";
+        std::string prop;
+        while (in >> prop) {
+            if (prop == "end") break;
+            // consume rest of line
+            std::string dummy;
+            std::getline(in, dummy);
+        }
+        return nullptr;
+    }
     
     std::string prop;
     while (in >> prop) {
@@ -62,6 +72,41 @@ std::unique_ptr<Figure> SceneSerializer::readFigure(std::istream& in) {
         fig->deserialize(prop, in);
     }
     return fig;
+}
+
+// ─── Template API ────────────────────────────────────────────────────────────
+
+bool SceneSerializer::saveFigureTemplate(const Figure* fig, const std::string& filepath) {
+    std::ofstream out(filepath);
+    if (!out.is_open()) return false;
+    writeFigure(out, fig, 0);
+    return true;
+}
+
+std::unique_ptr<Figure> SceneSerializer::loadFigureTemplate(const std::string& filepath) {
+    std::ifstream in(filepath);
+    if (!in.is_open()) return nullptr;
+    std::string word;
+    while (in >> word) {
+        if (word == "figure") {
+            return readFigure(in);
+        }
+    }
+    return nullptr;
+}
+
+std::vector<std::string> SceneSerializer::listFigureTemplates(const std::string& dir) {
+    std::vector<std::string> result;
+    std::error_code ec;
+    if (!fs::exists(dir, ec) || !fs::is_directory(dir, ec)) return result;
+    for (const auto& entry : fs::directory_iterator(dir, ec)) {
+        if (entry.is_regular_file() && entry.path().extension() == ".fig") {
+            result.push_back(entry.path().string());
+        }
+    }
+    // Sort alphabetically for consistent ordering
+    std::sort(result.begin(), result.end());
+    return result;
 }
 
 } // namespace core

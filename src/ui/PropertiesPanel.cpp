@@ -4,10 +4,14 @@
 #include "core/PolylineFigure.hpp"
 #include "core/Figures.hpp"
 #include "core/MathUtils.hpp"
+#include "core/SceneSerializer.hpp"
 #include <algorithm>
+#include <filesystem>
 #include <imgui.h>
 #include <cstdio>
 #include <string>
+
+namespace fs = std::filesystem;
 
 namespace ui {
 
@@ -530,6 +534,51 @@ bool PropertiesPanel::render(core::Scene &scene, core::Viewport &viewport, std::
               ImGui::Spacing();
           }
       }
+  }
+
+  // ─── Save as Template ─────────────────────────────────────────────────────
+  ImGui::Separator();
+  ImGui::Spacing();
+  ImGui::Text("SAVE AS TEMPLATE");
+  ImGui::SetNextItemWidth(-1.f);
+  ImGui::InputText("##TemplateName", m_templateName, sizeof(m_templateName));
+  if (ImGui::Button("Save as Template", ImVec2(-1.f, 0.f))) {
+      std::string name = m_templateName;
+      if (name.empty()) name = "figure";
+      // Sanitise: replace spaces and slashes
+      for (auto& c : name) {
+          if (c == ' ' || c == '/' || c == '\\' || c == ':') c = '_';
+      }
+      // Ensure figures/ directory exists
+      fs::create_directories("figures");
+      std::string path = "figures/" + name + ".fig";
+      if (core::SceneSerializer::saveFigureTemplate(selectedFigure, path)) {
+          m_templateSaveStatus = "Saved: " + path;
+          // ── Register in memory so it appears in dropdowns immediately ──────
+          auto templateFig = selectedFigure->clone();
+          if (templateFig->typeName() == "polyline")
+              static_cast<core::PolylineFigure*>(templateFig.get())->figureName = name;
+          else if (templateFig->typeName() == "composite")
+              static_cast<core::CompositeFigure*>(templateFig.get())->figureName = name;
+
+          // Upsert: overwrite if name already exists, otherwise append
+          int existingIdx = -1;
+          for (int i = 0; i < (int)toolbar.customTools.size(); ++i) {
+              if (toolbar.customTools[i].name == name) { existingIdx = i; break; }
+          }
+          if (existingIdx >= 0 && existingIdx < (int)userRegistry.size()) {
+              userRegistry[existingIdx] = std::move(templateFig); // overwrite
+          } else {
+              int customId = (int)userRegistry.size();
+              toolbar.customTools.push_back({name, customId});
+              userRegistry.push_back(std::move(templateFig));
+          }
+      } else {
+          m_templateSaveStatus = "Error: could not save!";
+      }
+  }
+  if (!m_templateSaveStatus.empty()) {
+      ImGui::TextColored(ImVec4(0.4f, 1.f, 0.4f, 1.f), "%s", m_templateSaveStatus.c_str());
   }
 
   ImGui::End();
