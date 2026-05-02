@@ -1508,25 +1508,9 @@ int main() {
       rotLine[1] = sf::Vertex(rotPos, sf::Color(0, 120, 215));
       window.draw(rotLine);
 
-      // Draw circle radius/foci handles
+      // Draw circle foci handles (red X-crosses)
       if (!isNodeEditMode) {
         if (auto* circ = dynamic_cast<core::Circle*>(scene.getSelectedFigure())) {
-            float rx = circ->getRadiusX();
-            float ry = circ->getRadiusY();
-            // 4 radius control points (diamond markers)
-            sf::Vector2f radiusHandles[4] = {
-                {rx, 0.f}, {0.f, -ry}, {-rx, 0.f}, {0.f, ry}
-            };
-            for (int i = 0; i < 4; ++i) {
-                sf::Vector2f absPos = circ->getAbsoluteVertex(radiusHandles[i]);
-                sf::CircleShape rh(5.f * markerScale, 4); // 4-sided = diamond
-                rh.setOrigin(5.f * markerScale, 5.f * markerScale);
-                rh.setPosition(absPos);
-                rh.setFillColor(sf::Color(255, 200, 0));
-                rh.setOutlineColor(sf::Color(200, 150, 0));
-                rh.setOutlineThickness(1.5f * markerScale);
-                window.draw(rh);
-            }
             // 2 focus markers (X-crosses, red)
             sf::Vector2f foci[2] = {circ->getFocus1(), circ->getFocus2()};
             for (int i = 0; i < 2; ++i) {
