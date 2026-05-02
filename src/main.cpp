@@ -82,6 +82,11 @@ int main() {
   sf::Vector2f scaleStartAnchor;
 
   int draggingVertexIndex = -1;
+
+  // Circle (ellipse) radius/foci drag handles
+  enum class CircleHandle { None, Right, Top, Left, Bottom, Focus1, Focus2 };
+  CircleHandle draggingCircleHandle = CircleHandle::None;
+  CircleHandle hoveringCircleHandle = CircleHandle::None;
   bool isCreating = false;
   int creatingStep =
       0; // 0 = not creating, 1 = first click placed, 2 = second click placed
@@ -427,6 +432,33 @@ int main() {
                 }
               }
 
+              // Check circle handles
+              CircleHandle hitCircleHandle = CircleHandle::None;
+              if (selFig && !isNodeEditMode) {
+                  if (auto* circ = dynamic_cast<core::Circle*>(selFig)) {
+                      float rx = circ->getRadiusX();
+                      float ry = circ->getRadiusY();
+                      sf::Vector2f f1 = circ->getFocus1();
+                      sf::Vector2f f2 = circ->getFocus2();
+                      struct { sf::Vector2f local; CircleHandle handle; } pts[] = {
+                          {{rx, 0.f}, CircleHandle::Right},
+                          {{0.f, -ry}, CircleHandle::Top},
+                          {{-rx, 0.f}, CircleHandle::Left},
+                          {{0.f, ry}, CircleHandle::Bottom},
+                          {f1, CircleHandle::Focus1},
+                          {f2, CircleHandle::Focus2},
+                      };
+                      float markerScale2 = 1.f / viewport.zoom;
+                      for (auto& pt : pts) {
+                          sf::Vector2f absP = circ->getAbsoluteVertex(pt.local);
+                          if (std::hypot(mousePos.x - absP.x, mousePos.y - absP.y) <= 8.f * markerScale2) {
+                              hitCircleHandle = pt.handle;
+                              break;
+                          }
+                      }
+                  }
+              }
+
               if (hoveringScaleHandle != ScaleHandle::None && selFig) {
                 draggingScaleHandle = hoveringScaleHandle;
                 scaleStartMouse = mousePos;
@@ -439,6 +471,8 @@ int main() {
                                                 mousePos.x - absoluteAnchor.x) *
                                      180.f / core::math::PI;
                 initialRotation = selFig->rotationAngle;
+              } else if (hitCircleHandle != CircleHandle::None && selFig) {
+                draggingCircleHandle = hitCircleHandle;
               } else if (isNodeEditMode && hoveredVertex != -1) {
                 draggingVertexIndex = hoveredVertex;
               } else if (hitAnchor && altPressed && selFig) {
@@ -613,6 +647,9 @@ int main() {
             }
             if (isRotating) {
               isRotating = false;
+            }
+            if (draggingCircleHandle != CircleHandle::None) {
+              draggingCircleHandle = CircleHandle::None;
             }
             if (draggingVertexIndex != -1) {
               // If this is a subfigure inside a solid group, snap it to siblings
@@ -807,6 +844,53 @@ int main() {
               newRot = std::round(newRot / 15.f) * 15.f;
             }
             scene.getSelectedFigure()->rotationAngle = newRot;
+          } else if (draggingCircleHandle != CircleHandle::None && scene.getSelectedFigure()) {
+            // Dragging a circle radius/foci handle
+            sf::Vector2f mousePos = viewport.screenToWorld(
+                sf::Vector2f(event.mouseMove.x, event.mouseMove.y));
+            auto* circ = dynamic_cast<core::Circle*>(scene.getSelectedFigure());
+            if (circ) {
+                sf::Vector2f absoluteAnchor = circ->getAbsoluteAnchor();
+                sf::Vector2f deltaAbs = mousePos - absoluteAnchor;
+                float absRot = circ->getAbsoluteRotation();
+                float invRad = -absRot * core::math::PI / 180.f;
+                float localX = deltaAbs.x * std::cos(invRad) - deltaAbs.y * std::sin(invRad);
+                float localY = deltaAbs.x * std::sin(invRad) + deltaAbs.y * std::cos(invRad);
+                sf::Vector2f absScale = circ->getAbsoluteScale();
+                localX /= absScale.x;
+                localY /= absScale.y;
+
+                switch (draggingCircleHandle) {
+                    case CircleHandle::Right:
+                    case CircleHandle::Left: {
+                        float newRx = std::abs(localX);
+                        if (newRx < 1.f) newRx = 1.f;
+                        circ->setRadius(newRx, circ->getRadiusY());
+                        break;
+                    }
+                    case CircleHandle::Top:
+                    case CircleHandle::Bottom: {
+                        float newRy = std::abs(localY);
+                        if (newRy < 1.f) newRy = 1.f;
+                        circ->setRadius(circ->getRadiusX(), newRy);
+                        break;
+                    }
+                    case CircleHandle::Focus1:
+                    case CircleHandle::Focus2: {
+                        // Project mouse onto the major axis direction to get focal distance
+                        float newC;
+                        if (circ->getRadiusX() >= circ->getRadiusY()) {
+                            newC = std::abs(localX);
+                        } else {
+                            newC = std::abs(localY);
+                        }
+                        if (newC < 0.f) newC = 0.f;
+                        circ->setFocalDistance(newC);
+                        break;
+                    }
+                    default: break;
+                }
+            }
           } else if (draggingVertexIndex != -1 && scene.getSelectedFigure()) {
             sf::Vector2f mousePos = viewport.screenToWorld(
                 sf::Vector2f(event.mouseMove.x, event.mouseMove.y));
@@ -921,6 +1005,35 @@ int main() {
     }
     hoveringScaleHandle = newHoverHandle;
 
+    // Update circle handle hover
+    hoveringCircleHandle = CircleHandle::None;
+    if (!isNodeEditMode && scene.getSelectedFigure()) {
+        if (auto* circ = dynamic_cast<core::Circle*>(scene.getSelectedFigure())) {
+            sf::Vector2f mousePos = viewport.screenToWorld(sf::Vector2f(
+                sf::Mouse::getPosition(window).x, sf::Mouse::getPosition(window).y));
+            float rx = circ->getRadiusX();
+            float ry = circ->getRadiusY();
+            sf::Vector2f f1 = circ->getFocus1();
+            sf::Vector2f f2 = circ->getFocus2();
+            float ms = 1.f / viewport.zoom;
+            struct { sf::Vector2f local; CircleHandle handle; } pts[] = {
+                {{rx, 0.f}, CircleHandle::Right},
+                {{0.f, -ry}, CircleHandle::Top},
+                {{-rx, 0.f}, CircleHandle::Left},
+                {{0.f, ry}, CircleHandle::Bottom},
+                {f1, CircleHandle::Focus1},
+                {f2, CircleHandle::Focus2},
+            };
+            for (auto& pt : pts) {
+                sf::Vector2f absP = circ->getAbsoluteVertex(pt.local);
+                if (std::hypot(mousePos.x - absP.x, mousePos.y - absP.y) <= 8.f * ms) {
+                    hoveringCircleHandle = pt.handle;
+                    break;
+                }
+            }
+        }
+    }
+
     ImGuiIO &io = ImGui::GetIO();
     if (!io.WantCaptureMouse) {
       sf::Vector2f mousePos = viewport.screenToWorld(sf::Vector2f(
@@ -942,6 +1055,14 @@ int main() {
                          viewport.worldToScreen(scene.customOriginPos).y) <=
                      15.f) {
         window.setMouseCursor(cursorHand);
+      } else if (hoveringCircleHandle != CircleHandle::None || draggingCircleHandle != CircleHandle::None) {
+        CircleHandle activeCH = draggingCircleHandle != CircleHandle::None ? draggingCircleHandle : hoveringCircleHandle;
+        if (activeCH == CircleHandle::Right || activeCH == CircleHandle::Left)
+            window.setMouseCursor(cursorSizeWE);
+        else if (activeCH == CircleHandle::Top || activeCH == CircleHandle::Bottom)
+            window.setMouseCursor(cursorSizeNS);
+        else // Focus1, Focus2
+            window.setMouseCursor(cursorSizeAll);
       } else if (activeHandle != ScaleHandle::None) {
         if (activeHandle == ScaleHandle::TL || activeHandle == ScaleHandle::BR)
           window.setMouseCursor(cursorSizeNWSE);
@@ -1386,6 +1507,40 @@ int main() {
       rotLine[0] = sf::Vertex(absTc, sf::Color(0, 120, 215));
       rotLine[1] = sf::Vertex(rotPos, sf::Color(0, 120, 215));
       window.draw(rotLine);
+
+      // Draw circle radius/foci handles
+      if (!isNodeEditMode) {
+        if (auto* circ = dynamic_cast<core::Circle*>(scene.getSelectedFigure())) {
+            float rx = circ->getRadiusX();
+            float ry = circ->getRadiusY();
+            // 4 radius control points (diamond markers)
+            sf::Vector2f radiusHandles[4] = {
+                {rx, 0.f}, {0.f, -ry}, {-rx, 0.f}, {0.f, ry}
+            };
+            for (int i = 0; i < 4; ++i) {
+                sf::Vector2f absPos = circ->getAbsoluteVertex(radiusHandles[i]);
+                sf::CircleShape rh(5.f * markerScale, 4); // 4-sided = diamond
+                rh.setOrigin(5.f * markerScale, 5.f * markerScale);
+                rh.setPosition(absPos);
+                rh.setFillColor(sf::Color(255, 200, 0));
+                rh.setOutlineColor(sf::Color(200, 150, 0));
+                rh.setOutlineThickness(1.5f * markerScale);
+                window.draw(rh);
+            }
+            // 2 focus markers (X-crosses, red)
+            sf::Vector2f foci[2] = {circ->getFocus1(), circ->getFocus2()};
+            for (int i = 0; i < 2; ++i) {
+                sf::Vector2f absPos = circ->getAbsoluteVertex(foci[i]);
+                float sz = 5.f * markerScale;
+                sf::VertexArray cross(sf::Lines, 4);
+                cross[0] = sf::Vertex(absPos + sf::Vector2f(-sz, -sz), sf::Color::Red);
+                cross[1] = sf::Vertex(absPos + sf::Vector2f( sz,  sz), sf::Color::Red);
+                cross[2] = sf::Vertex(absPos + sf::Vector2f(-sz,  sz), sf::Color::Red);
+                cross[3] = sf::Vertex(absPos + sf::Vector2f( sz, -sz), sf::Color::Red);
+                window.draw(cross);
+            }
+        }
+      }
 
       if (isNodeEditMode) {
         const auto &verts = scene.getSelectedFigure()->getVertices();

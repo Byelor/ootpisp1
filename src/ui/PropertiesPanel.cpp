@@ -207,6 +207,35 @@ bool PropertiesPanel::render(core::Scene &scene, core::Viewport &viewport, std::
   }
   ImGui::Spacing();
 
+  // 6b. Ellipse Geometry (only for Circle/Ellipse)
+  if (auto* circ = dynamic_cast<core::Circle*>(selectedFigure)) {
+    ImGui::Separator();
+    if (ImGui::TreeNodeEx("Ellipse Geometry", ImGuiTreeNodeFlags_DefaultOpen)) {
+        float rx = circ->getRadiusX();
+        if (ImGui::DragFloat("Radius X", &rx, 0.5f, 1.f, 5000.f, "%.1f")) {
+            if (rx < 1.f) rx = 1.f;
+            circ->setRadius(rx, circ->getRadiusY());
+        }
+        float ry = circ->getRadiusY();
+        if (ImGui::DragFloat("Radius Y", &ry, 0.5f, 1.f, 5000.f, "%.1f")) {
+            if (ry < 1.f) ry = 1.f;
+            circ->setRadius(circ->getRadiusX(), ry);
+        }
+        ImGui::Spacing();
+        float focalDist = circ->getFocalDistance();
+        if (ImGui::DragFloat("Focal Distance", &focalDist, 0.5f, 0.f, 5000.f, "%.1f")) {
+            if (focalDist < 0.f) focalDist = 0.f;
+            circ->setFocalDistance(focalDist);
+        }
+        sf::Vector2f f1 = circ->getFocus1();
+        sf::Vector2f f2 = circ->getFocus2();
+        ImGui::TextDisabled("Focus 1: (%.1f, %.1f)", f1.x, f1.y);
+        ImGui::TextDisabled("Focus 2: (%.1f, %.1f)", f2.x, f2.y);
+        ImGui::TreePop();
+    }
+    ImGui::Spacing();
+  }
+
   // 7. Edges & Side Lengths
   bool hasLengths = selectedFigure->hasSideLengths();
   if (!selectedFigure->edges.empty() || hasLengths) {
@@ -267,36 +296,7 @@ bool PropertiesPanel::render(core::Scene &scene, core::Viewport &viewport, std::
         for (size_t i = 0; i < selectedFigure->edges.size(); ++i) {
           ImGui::PushID(static_cast<int>(i));
 
-          if (auto circ = dynamic_cast<core::Circle*>(selectedFigure)) {
-            // Circle has special radius properties instead of side lengths
-            ImGui::Text("Circle Setup");
-            float rx = circ->getRadiusX();
-            float ry = circ->getRadiusY();
-            bool rChanged = false;
-            ImGui::SetNextItemWidth(-1.f);
-            if (ImGui::InputFloat("Radius X", &rx, 1.f, 10.f, "%.1f", ImGuiInputTextFlags_EnterReturnsTrue)) rChanged = true;
-            ImGui::SetNextItemWidth(-1.f);
-            if (ImGui::InputFloat("Radius Y", &ry, 1.f, 10.f, "%.1f", ImGuiInputTextFlags_EnterReturnsTrue)) rChanged = true;
-            if (rChanged) {
-               if (rx < 1.f) rx = 1.f;
-               if (ry < 1.f) ry = 1.f;
-               circ->setRadius(rx, ry);
-            }
-            // Foci
-            ImGui::Separator();
-            ImGui::Text("Ellipse Foci");
-            float focalDist = circ->getFocalDistance();
-            ImGui::SetNextItemWidth(-1.f);
-            if (ImGui::InputFloat("Focal Distance", &focalDist, 1.f, 10.f, "%.1f", ImGuiInputTextFlags_EnterReturnsTrue)) {
-                if (focalDist < 0.f) focalDist = 0.f;
-                circ->setFocalDistance(focalDist);
-            }
-            sf::Vector2f f1 = circ->getFocus1();
-            sf::Vector2f f2 = circ->getFocus2();
-            ImGui::TextDisabled("Focus 1: (%.1f, %.1f)", f1.x, f1.y);
-            ImGui::TextDisabled("Focus 2: (%.1f, %.1f)", f2.x, f2.y);
-            ImGui::Separator();
-          } else if (hasLengths && i < displayLengths.size()) {
+          if (hasLengths && i < displayLengths.size() && !dynamic_cast<core::Circle*>(selectedFigure)) {
             bool isLocked = lockedSides[i];
             if (ImGui::Checkbox("##lock", &isLocked)) {
               lockedSides[i] = isLocked;
@@ -312,6 +312,9 @@ bool PropertiesPanel::render(core::Scene &scene, core::Viewport &viewport, std::
 
           if (!dynamic_cast<core::Circle*>(selectedFigure)) {
               ImGui::Text("%s", selectedFigure->getSideName(static_cast<int>(i)));
+          } else {
+              ImGui::PopID();
+              break; // Circle edges are uniform, handled above
           }
 
           if (hasLengths && i < displayLengths.size()) {
