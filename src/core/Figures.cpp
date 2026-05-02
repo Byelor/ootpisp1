@@ -38,24 +38,19 @@ std::unique_ptr<Figure> Circle::clone() const {
     return copy;
 }
 
-void Circle::serialize(std::ostream& out, int indent) const {
-    PolylineFigure::serialize(out, indent);
-    std::string pad(indent, ' ');
-    out << pad << "radius_x " << m_radiusX << "\n";
-    out << pad << "radius_y " << m_radiusY << "\n";
+nlohmann::json Circle::serializeToJson() const {
+    nlohmann::json j = PolylineFigure::serializeToJson();
+    j["radius_x"] = m_radiusX;
+    j["radius_y"] = m_radiusY;
+    return j;
 }
 
-bool Circle::deserialize(const std::string& prop, std::istream& in) {
-    if (prop == "radius_x") {
-        float rx; in >> rx;
-        setRadius(rx, m_radiusY);
-        return true;
-    } else if (prop == "radius_y") {
-        float ry; in >> ry;
-        setRadius(m_radiusX, ry);
-        return true;
-    }
-    return PolylineFigure::deserialize(prop, in);
+void Circle::deserializeFromJson(const nlohmann::json& j) {
+    PolylineFigure::deserializeFromJson(j);
+    float rx = m_radiusX, ry = m_radiusY;
+    if (j.contains("radius_x")) rx = j["radius_x"].get<float>();
+    if (j.contains("radius_y")) ry = j["radius_y"].get<float>();
+    setRadius(rx, ry);
 }
 
 void Circle::draw(sf::RenderTarget& target) const {
@@ -68,6 +63,48 @@ sf::FloatRect Circle::getLocalBoundingBox() const {
 
 sf::FloatRect Circle::getBoundingBox() const {
     return Figure::getBoundingBox();
+}
+
+// ─── Foci methods ─────────────────────────────────────────────────────────────
+
+float Circle::getFocalDistance() const {
+    float a = std::max(m_radiusX, m_radiusY);
+    float b = std::min(m_radiusX, m_radiusY);
+    if (a <= b) return 0.f;
+    return std::sqrt(a * a - b * b);
+}
+
+void Circle::setFocalDistance(float c) {
+    if (c < 0.f) c = 0.f;
+    float a = std::max(m_radiusX, m_radiusY);
+    // Clamp c so it doesn't exceed the major axis
+    if (c >= a) c = a - 0.1f;
+    float b = std::sqrt(a * a - c * c);
+    if (b < 1.f) b = 1.f;
+    // Recalculate the minor axis
+    if (m_radiusX >= m_radiusY) {
+        setRadius(m_radiusX, b);
+    } else {
+        setRadius(b, m_radiusY);
+    }
+}
+
+sf::Vector2f Circle::getFocus1() const {
+    float c = getFocalDistance();
+    if (m_radiusX >= m_radiusY) {
+        return sf::Vector2f(-c, 0.f);
+    } else {
+        return sf::Vector2f(0.f, -c);
+    }
+}
+
+sf::Vector2f Circle::getFocus2() const {
+    float c = getFocalDistance();
+    if (m_radiusX >= m_radiusY) {
+        return sf::Vector2f(c, 0.f);
+    } else {
+        return sf::Vector2f(0.f, c);
+    }
 }
 
 } // namespace core

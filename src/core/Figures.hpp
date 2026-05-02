@@ -12,8 +12,8 @@ public:
     bool hasSideLengths() const override { return false; }
     bool hasUniformEdge() const override { return true; }
     void draw(sf::RenderTarget& target) const override;
-    void serialize(std::ostream& out, int indent) const override;
-    bool deserialize(const std::string& prop, std::istream& in) override;
+    nlohmann::json serializeToJson() const override;
+    void deserializeFromJson(const nlohmann::json& j) override;
     
     sf::FloatRect getBoundingBox() const override;
     sf::FloatRect getLocalBoundingBox() const override;
@@ -21,6 +21,12 @@ public:
     float getRadiusX() const { return m_radiusX; }
     float getRadiusY() const { return m_radiusY; }
     void setRadius(float rx, float ry);
+
+    // Foci methods
+    float getFocalDistance() const;
+    void setFocalDistance(float c);
+    sf::Vector2f getFocus1() const;
+    sf::Vector2f getFocus2() const;
     
 private:
     void updateVertices();
@@ -28,3 +34,4 @@ private:
 };
 
 } // namespace core
+

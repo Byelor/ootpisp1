@@ -1,6 +1,7 @@
 #include "CompositeFigure.hpp"
 #include "Scene.hpp"
-#include "SceneSerializer.hpp"
+#include "Figures.hpp"
+#include "PolylineFigure.hpp"
 #include "MathUtils.hpp"
 #include "utils/GeometryUtils.hpp"
 #include <algorithm>
@@ -358,67 +359,55 @@ void CompositeFigure::setAnchorKeepAbsolute(sf::Vector2f newAnchor) {
     }
 }
 
-void CompositeFigure::serialize(std::ostream& out, int indent) const {
-    Figure::serialize(out, indent);
-    std::string pad(indent, ' ');
-    out << pad << "name " << figureName << "\n";
-    out << pad << "solid_group " << (isSolidGroup ? 1 : 0) << "\n";
-    auto& verts = this->m_vertices;
-    out << pad << "vertices_base " << verts.size() << "\n";
-    for (size_t i = 0; i < verts.size(); ++i) {
-        out << pad << "  vertex " << i << " " << verts[i].x << " " << verts[i].y << "\n";
-    }
+nlohmann::json CompositeFigure::serializeToJson() const {
+    nlohmann::json j = Figure::serializeToJson();
+    j["name"] = figureName;
+    j["solid_group"] = isSolidGroup;
 
-    out << pad << "children " << children.size() << "\n";
-    for (size_t i = 0; i < children.size(); ++i) {
-        SceneSerializer::writeFigure(out, children[i].figure.get(), indent + 2);
+    nlohmann::json vertsArr = nlohmann::json::array();
+    for (size_t i = 0; i < m_vertices.size(); ++i) {
+        vertsArr.push_back({m_vertices[i].x, m_vertices[i].y});
     }
+    j["vertices"] = vertsArr;
+
+    nlohmann::json childrenArr = nlohmann::json::array();
+    for (const auto& child : children) {
+        nlohmann::json cj = child.figure->serializeToJson();
+        cj["type"] = child.figure->typeName();
+        childrenArr.push_back(cj);
+    }
+    j["children"] = childrenArr;
+
+    return j;
 }
 
-bool CompositeFigure::deserialize(const std::string& prop, std::istream& in) {
-    if (prop == "name") {
-        in >> std::ws;
-        std::getline(in, figureName);
-        return true;
-    } else if (prop == "solid_group") {
-        int v; in >> v;
-        isSolidGroup = (v != 0);
-        return true;
-    } else if (prop == "vertices" || prop == "vertices_base") {
-        size_t count;
-        in >> count;
+void CompositeFigure::deserializeFromJson(const nlohmann::json& j) {
+    Figure::deserializeFromJson(j);
+    if (j.contains("name")) figureName = j["name"].get<std::string>();
+    if (j.contains("solid_group")) isSolidGroup = j["solid_group"].get<bool>();
+    if (j.contains("vertices")) {
         auto& m_verts = getVerticesMutable();
-        m_verts.resize(count);
-        for (size_t i = 0; i < count; ++i) {
-            std::string dummy;
-            size_t idx;
-            float px, py;
-            in >> dummy >> idx >> px >> py;
-            if (idx < count) {
-                m_verts[idx] = {px, py};
-            }
+        m_verts.clear();
+        for (const auto& v : j["vertices"]) {
+            m_verts.push_back({v[0].get<float>(), v[1].get<float>()});
         }
-        return true;
-    } else if (prop == "children") {
-        size_t childCount;
-        in >> childCount;
-        for (size_t i = 0; i < childCount; ++i) {
-            std::string token;
-            in >> token; 
-            if (token == "figure") {
-                Child child;
-                child.figure = SceneSerializer::readFigure(in);
-                if (child.figure) {
-                    child.figure->parentFigure = this;
-                    children.push_back(std::move(child));
-                }
-            }
-        }
-        return true;
     }
-    
-    // Pass everything else to base class Figure
-    return Figure::deserialize(prop, in);
+    if (j.contains("children")) {
+        for (const auto& cj : j["children"]) {
+            std::string type = cj.value("type", "");
+            std::unique_ptr<Figure> fig;
+            if (type == "circle") fig = std::make_unique<Circle>(50.f, 50.f);
+            else if (type == "polyline") fig = std::make_unique<PolylineFigure>();
+            else if (type == "composite") fig = std::make_unique<CompositeFigure>();
+            else continue;
+
+            fig->deserializeFromJson(cj);
+            Child child;
+            child.figure = std::move(fig);
+            child.figure->parentFigure = this;
+            children.push_back(std::move(child));
+        }
+    }
 }
 
 } // namespace core

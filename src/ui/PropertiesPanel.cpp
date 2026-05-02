@@ -282,6 +282,20 @@ bool PropertiesPanel::render(core::Scene &scene, core::Viewport &viewport, std::
                if (ry < 1.f) ry = 1.f;
                circ->setRadius(rx, ry);
             }
+            // Foci
+            ImGui::Separator();
+            ImGui::Text("Ellipse Foci");
+            float focalDist = circ->getFocalDistance();
+            ImGui::SetNextItemWidth(-1.f);
+            if (ImGui::InputFloat("Focal Distance", &focalDist, 1.f, 10.f, "%.1f", ImGuiInputTextFlags_EnterReturnsTrue)) {
+                if (focalDist < 0.f) focalDist = 0.f;
+                circ->setFocalDistance(focalDist);
+            }
+            sf::Vector2f f1 = circ->getFocus1();
+            sf::Vector2f f2 = circ->getFocus2();
+            ImGui::TextDisabled("Focus 1: (%.1f, %.1f)", f1.x, f1.y);
+            ImGui::TextDisabled("Focus 2: (%.1f, %.1f)", f2.x, f2.y);
+            ImGui::Separator();
           } else if (hasLengths && i < displayLengths.size()) {
             bool isLocked = lockedSides[i];
             if (ImGui::Checkbox("##lock", &isLocked)) {
@@ -551,7 +565,7 @@ bool PropertiesPanel::render(core::Scene &scene, core::Viewport &viewport, std::
       }
       // Ensure figures/ directory exists
       fs::create_directories("figures");
-      std::string path = "figures/" + name + ".fig";
+      std::string path = "figures/" + name + ".json";
       if (core::SceneSerializer::saveFigureTemplate(selectedFigure, path)) {
           m_templateSaveStatus = "Saved: " + path;
           // ── Register in memory so it appears in dropdowns immediately ──────

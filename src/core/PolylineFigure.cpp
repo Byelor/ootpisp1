@@ -130,40 +130,27 @@ void PolylineFigure::setVertexAngle(int vertIdx, float angleDeg) {
     }
 }
 
-void PolylineFigure::serialize(std::ostream& out, int indent) const {
-    Figure::serialize(out, indent);
-    std::string pad(indent, ' ');
-    out << pad << "name " << figureName << "\n";
-    auto verts = getVertices(); // save current relative vertices
-    out << pad << "vertices_base " << verts.size() << "\n";
+nlohmann::json PolylineFigure::serializeToJson() const {
+    nlohmann::json j = Figure::serializeToJson();
+    j["name"] = figureName;
+    nlohmann::json vertsArr = nlohmann::json::array();
+    auto verts = getVertices();
     for (size_t i = 0; i < verts.size(); ++i) {
-        out << pad << "  vertex " << i << " " << verts[i].x << " " << verts[i].y << "\n";
+        vertsArr.push_back({verts[i].x, verts[i].y});
     }
+    j["vertices"] = vertsArr;
+    return j;
 }
 
-bool PolylineFigure::deserialize(const std::string& prop, std::istream& in) {
-    if (prop == "name") {
-        in >> std::ws;
-        std::getline(in, figureName);
-        return true;
-    } else if (prop == "vertices" || prop == "vertices_base") {
-        size_t count;
-        in >> count;
-        m_vertices.resize(count);
-        for (size_t i = 0; i < count; ++i) {
-            std::string dummy;
-            size_t idx;
-            float px, py;
-            in >> dummy >> idx >> px >> py;
-            if (idx < count) {
-                m_vertices[idx] = {px, py};
-            }
+void PolylineFigure::deserializeFromJson(const nlohmann::json& j) {
+    Figure::deserializeFromJson(j);
+    if (j.contains("name")) figureName = j["name"].get<std::string>();
+    if (j.contains("vertices")) {
+        m_vertices.clear();
+        for (const auto& v : j["vertices"]) {
+            m_vertices.push_back({v[0].get<float>(), v[1].get<float>()});
         }
-        return true;
     }
-    
-    // Pass everything else to base class
-    return Figure::deserialize(prop, in);
 }
 
 } // namespace core

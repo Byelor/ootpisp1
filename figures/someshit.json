@@ -1,0 +1,116 @@
+{
+  "anchor": [
+    580.0,
+    293.0
+  ],
+  "edges": [
+    {
+      "color": [
+        0,
+        0,
+        0,
+        255
+      ],
+      "width": 2.0
+    },
+    {
+      "color": [
+        0,
+        0,
+        0,
+        255
+      ],
+      "width": 2.0
+    },
+    {
+      "color": [
+        0,
+        0,
+        0,
+        255
+      ],
+      "width": 2.0
+    },
+    {
+      "color": [
+        0,
+        0,
+        0,
+        255
+      ],
+      "width": 2.0
+    }
+  ],
+  "fill_color": [
+    150,
+    150,
+    150,
+    200
+  ],
+  "id": 1,
+  "locked_angles": [
+    {
+      "locked": false,
+      "value": 78.85993957519531
+    },
+    {
+      "locked": false,
+      "value": 91.61370849609375
+    },
+    {
+      "locked": false,
+      "value": 99.5228042602539
+    },
+    {
+      "locked": false,
+      "value": 90.00354766845703
+    }
+  ],
+  "locked_sides": [
+    {
+      "length": 314.31195068359375,
+      "locked": false
+    },
+    {
+      "length": 244.0327911376953,
+      "locked": false
+    },
+    {
+      "length": 268.0018615722656,
+      "locked": false
+    },
+    {
+      "length": 301.3785095214844,
+      "locked": false
+    }
+  ],
+  "name": "Polygon",
+  "parent_origin": [
+    0.0,
+    0.0
+  ],
+  "rotation": 0.0,
+  "scale": [
+    1.0,
+    1.0
+  ],
+  "type": "polyline",
+  "vertices": [
+    [
+      -157.0,
+      -149.0
+    ],
+    [
+      157.0,
+      -135.0
+    ],
+    [
+      153.0,
+      109.0
+    ],
+    [
+      -112.0,
+      149.0
+    ]
+  ]
+}

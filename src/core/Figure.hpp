@@ -1,6 +1,7 @@
 #pragma once
 
 #include <SFML/Graphics.hpp>
+#include <nlohmann/json.hpp>
 #include <cstdint>
 #include <memory>
 #include <string>
@@ -22,8 +23,8 @@ public:
   virtual std::unique_ptr<Figure> clone() const = 0;
   virtual std::string typeName() const = 0;
 
-  virtual void serialize(std::ostream& out, int indent) const;
-  virtual bool deserialize(const std::string& prop, std::istream& in);
+  virtual nlohmann::json serializeToJson() const;
+  virtual void deserializeFromJson(const nlohmann::json& j);
 
   // Stable unique identifier (assigned by Scene). 0 means "unassigned".
   std::uint64_t id = 0;

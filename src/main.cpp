@@ -192,13 +192,13 @@ int main() {
   // Auto-load figure templates from figures/ directory.
   // The FILENAME stem is always used as the display name so that every file
   // gets a unique, predictable entry regardless of what figureName is stored
-  // inside the .fig (which can become stale or duplicate over time).
+  // inside the .json (which can become stale or duplicate over time).
   {
     auto templatePaths = core::SceneSerializer::listFigureTemplates("figures");
     for (const auto& path : templatePaths) {
         auto fig = core::SceneSerializer::loadFigureTemplate(path);
         if (fig) {
-            // Key = filename stem (e.g. "df" for "df.fig")
+            // Key = filename stem (e.g. "df" for "df.json")
             std::string name = fs::path(path).stem().string();
 
             // Sync the figure's internal name to the filename so it's

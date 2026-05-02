@@ -22,8 +22,8 @@ public:
     std::string typeName() const override { return "polyline"; }
     std::unique_ptr<Figure> clone() const override;
 
-    void serialize(std::ostream& out, int indent) const override;
-    bool deserialize(const std::string& prop, std::istream& in) override;
+    nlohmann::json serializeToJson() const override;
+    void deserializeFromJson(const nlohmann::json& j) override;
 
     /// Get the interior angle at vertex i (degrees, 0..360)
     float getVertexAngle(int vertIdx) const;

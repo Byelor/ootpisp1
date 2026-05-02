@@ -103,7 +103,7 @@ void CreateFigureModal::savePolylineAsTemplate(
     if (c == ' ' || c == '/' || c == '\\' || c == ':') c = '_';
 
   fs::create_directories("figures");
-  std::string path = "figures/" + name + ".fig";
+  std::string path = "figures/" + name + ".json";
 
   // Clone for template (anchor stays at 0)
   auto templateFig = fig->clone();

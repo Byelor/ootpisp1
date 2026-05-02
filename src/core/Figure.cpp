@@ -379,80 +379,90 @@ namespace core {
         anchor += delta;
     }
 
-    void Figure::serialize(std::ostream& out, int indent) const {
-        std::string pad(indent, ' ');
-        out << pad << "id " << id << "\n";
-        out << pad << "anchor " << anchor.x << " " << anchor.y << "\n";
-        out << pad << "parent_origin " << parentOrigin.x << " " << parentOrigin.y << "\n";
-        out << pad << "rotation " << rotationAngle << "\n";
-        out << pad << "scale " << scale.x << " " << scale.y << "\n";
-        out << pad << "fill " << (int)fillColor.r << " " << (int)fillColor.g << " " 
-            << (int)fillColor.b << " " << (int)fillColor.a << "\n";
-        out << pad << "edges " << edges.size() << "\n";
-        for (size_t i = 0; i < edges.size(); ++i) {
-            out << pad << "  edge " << i << " width " << edges[i].width << " color " 
-                << (int)edges[i].color.r << " " << (int)edges[i].color.g << " "
-                << (int)edges[i].color.b << " " << (int)edges[i].color.a << "\n";
-        }
+    nlohmann::json Figure::serializeToJson() const {
+        nlohmann::json j;
+        j["id"] = id;
+        j["anchor"] = {anchor.x, anchor.y};
+        j["parent_origin"] = {parentOrigin.x, parentOrigin.y};
+        j["rotation"] = rotationAngle;
+        j["scale"] = {scale.x, scale.y};
+        j["fill_color"] = {(int)fillColor.r, (int)fillColor.g, (int)fillColor.b, (int)fillColor.a};
 
-        out << pad << "locked_sides " << lockedSides.size() << "\n";
+        nlohmann::json edgesArr = nlohmann::json::array();
+        for (const auto& e : edges) {
+            edgesArr.push_back({
+                {"width", e.width},
+                {"color", {(int)e.color.r, (int)e.color.g, (int)e.color.b, (int)e.color.a}}
+            });
+        }
+        j["edges"] = edgesArr;
+
+        nlohmann::json lockedSidesArr = nlohmann::json::array();
         for (size_t i = 0; i < lockedSides.size(); ++i) {
-            out << pad << "  lock_s " << i << " " << (lockedSides[i] ? 1 : 0) << " " << lockedLengths[i] << "\n";
+            lockedSidesArr.push_back({
+                {"locked", lockedSides[i]},
+                {"length", lockedLengths[i]}
+            });
         }
-        out << pad << "locked_angles " << lockedAngles.size() << "\n";
+        j["locked_sides"] = lockedSidesArr;
+
+        nlohmann::json lockedAnglesArr = nlohmann::json::array();
         for (size_t i = 0; i < lockedAngles.size(); ++i) {
-            out << pad << "  lock_a " << i << " " << (lockedAngles[i] ? 1 : 0) << " " << lockedAngleValues[i] << "\n";
+            lockedAnglesArr.push_back({
+                {"locked", lockedAngles[i]},
+                {"value", lockedAngleValues[i]}
+            });
         }
+        j["locked_angles"] = lockedAnglesArr;
+
+        return j;
     }
 
-    bool Figure::deserialize(const std::string& prop, std::istream& in) {
-        if (prop == "id") in >> id;
-        else if (prop == "anchor") in >> anchor.x >> anchor.y;
-        else if (prop == "parent_origin") in >> parentOrigin.x >> parentOrigin.y;
-        else if (prop == "rotation") in >> rotationAngle;
-        else if (prop == "scale") in >> scale.x >> scale.y;
-        else if (prop == "fill") {
-            int r, g, b, a; in >> r >> g >> b >> a;
-            fillColor = sf::Color(r, g, b, a);
-        } else if (prop == "edges") {
-            size_t count; in >> count;
-            edges.resize(count);
-            for (size_t i = 0; i < count; ++i) {
-                std::string dummy; size_t idx; float width; int r, g, b, a;
-                in >> dummy >> idx >> dummy >> width >> dummy >> r >> g >> b >> a;
-                if (idx < count) {
-                    edges[idx].width = width;
-                    edges[idx].color = sf::Color(r, g, b, a);
-                }
-            }
-        } else if (prop == "locked_sides") {
-            size_t count; in >> count;
-            lockedSides.resize(count);
-            lockedLengths.resize(count);
-            for (size_t i = 0; i < count; ++i) {
-                std::string dummy; size_t idx; int locked; float len;
-                in >> dummy >> idx >> locked >> len;
-                if (idx < count) {
-                    lockedSides[idx] = (locked != 0);
-                    lockedLengths[idx] = len;
-                }
-            }
-        } else if (prop == "locked_angles") {
-            size_t count; in >> count;
-            lockedAngles.resize(count);
-            lockedAngleValues.resize(count);
-            for (size_t i = 0; i < count; ++i) {
-                std::string dummy; size_t idx; int locked; float val;
-                in >> dummy >> idx >> locked >> val;
-                if (idx < count) {
-                    lockedAngles[idx] = (locked != 0);
-                    lockedAngleValues[idx] = val;
-                }
-            }
-        } else {
-            return false;
+    void Figure::deserializeFromJson(const nlohmann::json& j) {
+        if (j.contains("id")) id = j["id"].get<std::uint64_t>();
+        if (j.contains("anchor")) {
+            auto a = j["anchor"];
+            anchor = {a[0].get<float>(), a[1].get<float>()};
         }
-        return true;
+        if (j.contains("parent_origin")) {
+            auto po = j["parent_origin"];
+            parentOrigin = {po[0].get<float>(), po[1].get<float>()};
+        }
+        if (j.contains("rotation")) rotationAngle = j["rotation"].get<float>();
+        if (j.contains("scale")) {
+            auto s = j["scale"];
+            scale = {s[0].get<float>(), s[1].get<float>()};
+        }
+        if (j.contains("fill_color")) {
+            auto fc = j["fill_color"];
+            fillColor = sf::Color(fc[0].get<int>(), fc[1].get<int>(), fc[2].get<int>(), fc[3].get<int>());
+        }
+        if (j.contains("edges")) {
+            edges.clear();
+            for (const auto& ej : j["edges"]) {
+                Edge e;
+                e.width = ej["width"].get<float>();
+                auto c = ej["color"];
+                e.color = sf::Color(c[0].get<int>(), c[1].get<int>(), c[2].get<int>(), c[3].get<int>());
+                edges.push_back(e);
+            }
+        }
+        if (j.contains("locked_sides")) {
+            lockedSides.clear();
+            lockedLengths.clear();
+            for (const auto& ls : j["locked_sides"]) {
+                lockedSides.push_back(ls["locked"].get<bool>());
+                lockedLengths.push_back(ls["length"].get<float>());
+            }
+        }
+        if (j.contains("locked_angles")) {
+            lockedAngles.clear();
+            lockedAngleValues.clear();
+            for (const auto& la : j["locked_angles"]) {
+                lockedAngles.push_back(la["locked"].get<bool>());
+                lockedAngleValues.push_back(la["value"].get<float>());
+            }
+        }
     }
 
 } // namespace core
