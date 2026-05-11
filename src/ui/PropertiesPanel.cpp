@@ -227,10 +227,37 @@ bool PropertiesPanel::render(core::Scene &scene, core::Viewport &viewport, std::
             if (focalDist < 0.f) focalDist = 0.f;
             circ->setFocalDistance(focalDist);
         }
+        ImGui::Spacing();
+
+        // Symmetric foci toggle
+        bool symmetric = circ->isSymmetricFoci();
+        if (ImGui::Checkbox("Symmetric Foci", &symmetric)) {
+            circ->setSymmetricFoci(symmetric);
+        }
+        if (ImGui::IsItemHovered()) {
+            ImGui::SetTooltip("When enabled, Focus 2 mirrors Focus 1\nrelative to the center.");
+        }
+
+        // Focus 1 — always editable
         sf::Vector2f f1 = circ->getFocus1();
+        float f1v[2] = {f1.x, f1.y};
+        if (ImGui::DragFloat2("Focus 1", f1v, 0.5f, -5000.f, 5000.f, "%.1f")) {
+            circ->setFocus1(sf::Vector2f(f1v[0], f1v[1]));
+        }
+
+        // Focus 2 — editable only when NOT symmetric
         sf::Vector2f f2 = circ->getFocus2();
-        ImGui::TextDisabled("Focus 1: (%.1f, %.1f)", f1.x, f1.y);
-        ImGui::TextDisabled("Focus 2: (%.1f, %.1f)", f2.x, f2.y);
+        float f2v[2] = {f2.x, f2.y};
+        if (symmetric) {
+            ImGui::BeginDisabled();
+            ImGui::DragFloat2("Focus 2", f2v, 0.5f, -5000.f, 5000.f, "%.1f");
+            ImGui::EndDisabled();
+        } else {
+            if (ImGui::DragFloat2("Focus 2", f2v, 0.5f, -5000.f, 5000.f, "%.1f")) {
+                circ->setFocus2(sf::Vector2f(f2v[0], f2v[1]));
+            }
+        }
+
         ImGui::TreePop();
     }
     ImGui::Spacing();

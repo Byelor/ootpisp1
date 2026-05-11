@@ -875,17 +875,12 @@ int main() {
                         circ->setRadius(circ->getRadiusX(), newRy);
                         break;
                     }
-                    case CircleHandle::Focus1:
+                    case CircleHandle::Focus1: {
+                        circ->setFocus1(sf::Vector2f(localX, localY));
+                        break;
+                    }
                     case CircleHandle::Focus2: {
-                        // Project mouse onto the major axis direction to get focal distance
-                        float newC;
-                        if (circ->getRadiusX() >= circ->getRadiusY()) {
-                            newC = std::abs(localX);
-                        } else {
-                            newC = std::abs(localY);
-                        }
-                        if (newC < 0.f) newC = 0.f;
-                        circ->setFocalDistance(newC);
+                        circ->setFocus2(sf::Vector2f(localX, localY));
                         break;
                     }
                     default: break;

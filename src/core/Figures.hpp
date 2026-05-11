@@ -27,10 +27,20 @@ public:
     void setFocalDistance(float c);
     sf::Vector2f getFocus1() const;
     sf::Vector2f getFocus2() const;
+    void setFocus1(sf::Vector2f offset);
+    void setFocus2(sf::Vector2f offset);
+
+    bool isSymmetricFoci() const { return m_symmetricFoci; }
+    void setSymmetricFoci(bool sym);
     
 private:
     void updateVertices();
+    void recalcFociFromRadii();
+    void recalcRadiiFromFoci();
     float m_radiusX, m_radiusY;
+    sf::Vector2f m_focusOffset1{0.f, 0.f};
+    sf::Vector2f m_focusOffset2{0.f, 0.f};
+    bool m_symmetricFoci = true;
 };
 
 } // namespace core
