@@ -7,6 +7,7 @@ namespace core {
 // ─── Circle 
 Circle::Circle(float radiusX, float radiusY) : m_radiusX(radiusX), m_radiusY(radiusY) {
     figureName = "Circle";
+    m_semiMajor = std::max(radiusX, radiusY);
     // Circle uses one virtual edge entry for outline style.
     edges.resize(1);
     updateVertices();
@@ -36,7 +37,7 @@ void Circle::recalcFociFromRadii() {
 }
 
 void Circle::recalcRadiiFromFoci() {
-    // Determine the foci direction to know which axis is major
+    // Determine the foci direction components
     float fx, fy;
     if (m_symmetricFoci) {
         fx = std::abs(m_focusOffset1.x);
@@ -57,7 +58,9 @@ void Circle::recalcRadiiFromFoci() {
         c = std::sqrt(dx * dx + dy * dy) / 2.f;
     }
 
-    float a = std::max(m_radiusX, m_radiusY);
+    // Use stored semi-major axis to prevent drift during blending
+    float a = m_semiMajor;
+    if (a < 1.f) a = std::max(m_radiusX, m_radiusY); // fallback
 
     // Clamp c so it doesn't exceed major radius; also clamp the offsets
     if (c >= a) {
@@ -72,23 +75,19 @@ void Circle::recalcRadiiFromFoci() {
     float b = std::sqrt(a * a - c * c);
     if (b < 1.f) b = 1.f;
 
-    // Determine which axis is major based on foci DIRECTION:
-    // Foci more horizontal → X is major (a), Y is minor (b)
-    // Foci more vertical   → Y is major (a), X is minor (b)
-    // If foci at center (c≈0), keep current orientation
-    if (c < 0.001f) {
-        // Nearly circular — don't flip axes
-        if (m_radiusX >= m_radiusY) {
-            m_radiusY = b;
-        } else {
-            m_radiusX = b;
-        }
-    } else if (fx >= fy) {
+    // Smooth blending based on focus angle:
+    //   t = 0 → foci horizontal → rx=a, ry=b
+    //   t = 1 → foci vertical   → rx=b, ry=a
+    //   t = 0.5 → diagonal      → rx=ry (circle)
+    float denom = fx * fx + fy * fy;
+    if (denom < 0.001f) {
+        // Foci at center — make it a circle with radius a
         m_radiusX = a;
-        m_radiusY = b;
-    } else {
         m_radiusY = a;
-        m_radiusX = b;
+    } else {
+        float t = (fy * fy) / denom;  // sin²(θ)
+        m_radiusX = a * (1.f - t) + b * t;
+        m_radiusY = a * t + b * (1.f - t);
     }
     updateVertices();
 }
@@ -96,6 +95,7 @@ void Circle::recalcRadiiFromFoci() {
 void Circle::setRadius(float rx, float ry) {
     m_radiusX = rx;
     m_radiusY = ry;
+    m_semiMajor = std::max(rx, ry);
     updateVertices();
     recalcFociFromRadii();
 }
@@ -111,6 +111,7 @@ std::unique_ptr<Figure> Circle::clone() const {
     copy->m_focusOffset1 = m_focusOffset1;
     copy->m_focusOffset2 = m_focusOffset2;
     copy->m_symmetricFoci = m_symmetricFoci;
+    copy->m_semiMajor = m_semiMajor;
     return copy;
 }
 
@@ -123,6 +124,7 @@ nlohmann::json Circle::serializeToJson() const {
     j["focus2_x"] = m_focusOffset2.x;
     j["focus2_y"] = m_focusOffset2.y;
     j["symmetric_foci"] = m_symmetricFoci;
+    j["semi_major"] = m_semiMajor;
     return j;
 }
 
@@ -144,6 +146,9 @@ void Circle::deserializeFromJson(const nlohmann::json& j) {
     }
     if (j.contains("symmetric_foci")) {
         m_symmetricFoci = j["symmetric_foci"].get<bool>();
+    }
+    if (j.contains("semi_major")) {
+        m_semiMajor = j["semi_major"].get<float>();
     }
 }
 
