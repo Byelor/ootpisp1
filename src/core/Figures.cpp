@@ -45,7 +45,9 @@ void Circle::recalcRadiiFromFoci() {
     }
 
     // 1. Compute rotation angle from focus direction
-    float focusAngle = std::atan2(fy, fx); // radians
+    // Focus1 is stored as (-c, 0), so rotating (-c, 0) by θ must give (fx, fy):
+    //   -c·cos(θ) = fx,  -c·sin(θ) = fy  →  θ = atan2(-fy, -fx)
+    float focusAngle = std::atan2(-fy, -fx); // radians
     rotationAngle = focusAngle * 180.f / math::PI;
 
     // 2. Compute focal distance

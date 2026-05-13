@@ -238,23 +238,40 @@ bool PropertiesPanel::render(core::Scene &scene, core::Viewport &viewport, std::
             ImGui::SetTooltip("When enabled, Focus 2 mirrors Focus 1\nrelative to the center.");
         }
 
-        // Focus 1 — always editable
-        sf::Vector2f f1 = circ->getFocus1();
-        float f1v[2] = {f1.x, f1.y};
+        // Helper: convert absolute position back to local focus offset
+        auto absToLocalFocus = [&](sf::Vector2f absPos) -> sf::Vector2f {
+            sf::Vector2f deltaAbs = absPos - circ->getAbsoluteAnchor();
+            float absRot = circ->getAbsoluteRotation();
+            float invRad = -absRot * core::math::PI / 180.f;
+            float lx = deltaAbs.x * std::cos(invRad) - deltaAbs.y * std::sin(invRad);
+            float ly = deltaAbs.x * std::sin(invRad) + deltaAbs.y * std::cos(invRad);
+            sf::Vector2f absScale = circ->getAbsoluteScale();
+            lx /= absScale.x;
+            ly /= absScale.y;
+            return {lx, ly};
+        };
+
+        // Focus 1 — displayed as absolute coordinates (relative to origin)
+        sf::Vector2f absF1 = circ->getAbsoluteVertex(circ->getFocus1());
+        sf::Vector2f displayF1 = absF1 - circ->parentOrigin;
+        float f1v[2] = {displayF1.x, displayF1.y};
         if (ImGui::DragFloat2("Focus 1", f1v, 0.5f, -5000.f, 5000.f, "%.1f")) {
-            circ->setFocus1(sf::Vector2f(f1v[0], f1v[1]));
+            sf::Vector2f newAbs(f1v[0] + circ->parentOrigin.x, f1v[1] + circ->parentOrigin.y);
+            circ->setFocus1(absToLocalFocus(newAbs));
         }
 
         // Focus 2 — editable only when NOT symmetric
-        sf::Vector2f f2 = circ->getFocus2();
-        float f2v[2] = {f2.x, f2.y};
+        sf::Vector2f absF2 = circ->getAbsoluteVertex(circ->getFocus2());
+        sf::Vector2f displayF2 = absF2 - circ->parentOrigin;
+        float f2v[2] = {displayF2.x, displayF2.y};
         if (symmetric) {
             ImGui::BeginDisabled();
             ImGui::DragFloat2("Focus 2", f2v, 0.5f, -5000.f, 5000.f, "%.1f");
             ImGui::EndDisabled();
         } else {
             if (ImGui::DragFloat2("Focus 2", f2v, 0.5f, -5000.f, 5000.f, "%.1f")) {
-                circ->setFocus2(sf::Vector2f(f2v[0], f2v[1]));
+                sf::Vector2f newAbs(f2v[0] + circ->parentOrigin.x, f2v[1] + circ->parentOrigin.y);
+                circ->setFocus2(absToLocalFocus(newAbs));
             }
         }
 
