@@ -234,15 +234,15 @@ bool PropertiesPanel::render(core::Scene &scene, core::Viewport &viewport, std::
         sf::Vector2f displayF1 = absF1 - circ->parentOrigin;
         float f1v[2] = {displayF1.x, displayF1.y};
 
+        ImGui::Text("Focus 1");
         core::Circle::FocusPivot f1Pivot = circ->getFocus1Pivot();
         const char* f1PivotOpts[] = { "Anchor", "Focus 2" };
         int f1PivotIdx = (f1Pivot == core::Circle::FocusPivot::Anchor) ? 0 : 1;
-        ImGui::SetNextItemWidth(100.f);
-        if (ImGui::Combo("Pivot F1", &f1PivotIdx, f1PivotOpts, 2)) {
+        ImGui::SetNextItemWidth(120.f);
+        if (ImGui::Combo("Pivot##F1", &f1PivotIdx, f1PivotOpts, 2)) {
             circ->setFocus1Pivot(f1PivotIdx == 0 ? core::Circle::FocusPivot::Anchor : core::Circle::FocusPivot::OtherFocus);
         }
-        ImGui::SameLine();
-        ImGui::SetNextItemWidth(150.f);
+        ImGui::SetNextItemWidth(-1.f);
         if (ImGui::DragFloat2("##Focus 1", f1v, 0.5f, -5000.f, 5000.f, "%.1f")) {
             sf::Vector2f newAbs(f1v[0] + circ->parentOrigin.x, f1v[1] + circ->parentOrigin.y);
             circ->setFocus1Absolute(newAbs);
@@ -253,15 +253,15 @@ bool PropertiesPanel::render(core::Scene &scene, core::Viewport &viewport, std::
         sf::Vector2f displayF2 = absF2 - circ->parentOrigin;
         float f2v[2] = {displayF2.x, displayF2.y};
 
+        ImGui::Text("Focus 2");
         core::Circle::FocusPivot f2Pivot = circ->getFocus2Pivot();
         const char* f2PivotOpts[] = { "Anchor", "Focus 1" };
         int f2PivotIdx = (f2Pivot == core::Circle::FocusPivot::Anchor) ? 0 : 1;
-        ImGui::SetNextItemWidth(100.f);
-        if (ImGui::Combo("Pivot F2", &f2PivotIdx, f2PivotOpts, 2)) {
+        ImGui::SetNextItemWidth(120.f);
+        if (ImGui::Combo("Pivot##F2", &f2PivotIdx, f2PivotOpts, 2)) {
             circ->setFocus2Pivot(f2PivotIdx == 0 ? core::Circle::FocusPivot::Anchor : core::Circle::FocusPivot::OtherFocus);
         }
-        ImGui::SameLine();
-        ImGui::SetNextItemWidth(150.f);
+        ImGui::SetNextItemWidth(-1.f);
         if (ImGui::DragFloat2("##Focus 2", f2v, 0.5f, -5000.f, 5000.f, "%.1f")) {
             sf::Vector2f newAbs(f2v[0] + circ->parentOrigin.x, f2v[1] + circ->parentOrigin.y);
             circ->setFocus2Absolute(newAbs);
