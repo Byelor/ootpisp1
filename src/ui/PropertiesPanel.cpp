@@ -238,26 +238,14 @@ bool PropertiesPanel::render(core::Scene &scene, core::Viewport &viewport, std::
             ImGui::SetTooltip("When enabled, Focus 2 mirrors Focus 1\nrelative to the center.");
         }
 
-        // Helper: convert absolute position back to local focus offset
-        auto absToLocalFocus = [&](sf::Vector2f absPos) -> sf::Vector2f {
-            sf::Vector2f deltaAbs = absPos - circ->getAbsoluteAnchor();
-            float absRot = circ->getAbsoluteRotation();
-            float invRad = -absRot * core::math::PI / 180.f;
-            float lx = deltaAbs.x * std::cos(invRad) - deltaAbs.y * std::sin(invRad);
-            float ly = deltaAbs.x * std::sin(invRad) + deltaAbs.y * std::cos(invRad);
-            sf::Vector2f absScale = circ->getAbsoluteScale();
-            lx /= absScale.x;
-            ly /= absScale.y;
-            return {lx, ly};
-        };
-
         // Focus 1 — displayed as absolute coordinates (relative to origin)
         sf::Vector2f absF1 = circ->getAbsoluteVertex(circ->getFocus1());
         sf::Vector2f displayF1 = absF1 - circ->parentOrigin;
         float f1v[2] = {displayF1.x, displayF1.y};
         if (ImGui::DragFloat2("Focus 1", f1v, 0.5f, -5000.f, 5000.f, "%.1f")) {
             sf::Vector2f newAbs(f1v[0] + circ->parentOrigin.x, f1v[1] + circ->parentOrigin.y);
-            circ->setFocus1(absToLocalFocus(newAbs));
+            // setFocus1 expects world-direction: (absolute position - anchor)
+            circ->setFocus1(newAbs - circ->getAbsoluteAnchor());
         }
 
         // Focus 2 — editable only when NOT symmetric
@@ -271,7 +259,7 @@ bool PropertiesPanel::render(core::Scene &scene, core::Viewport &viewport, std::
         } else {
             if (ImGui::DragFloat2("Focus 2", f2v, 0.5f, -5000.f, 5000.f, "%.1f")) {
                 sf::Vector2f newAbs(f2v[0] + circ->parentOrigin.x, f2v[1] + circ->parentOrigin.y);
-                circ->setFocus2(absToLocalFocus(newAbs));
+                circ->setFocus2(newAbs - circ->getAbsoluteAnchor());
             }
         }
 
