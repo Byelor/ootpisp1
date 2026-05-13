@@ -27,68 +27,51 @@ void Circle::recalcFociFromRadii() {
     float a = std::max(m_radiusX, m_radiusY);
     float b = std::min(m_radiusX, m_radiusY);
     float c = (a > b) ? std::sqrt(a * a - b * b) : 0.f;
-    if (m_radiusX >= m_radiusY) {
-        m_focusOffset1 = sf::Vector2f(-c, 0.f);
-        m_focusOffset2 = sf::Vector2f( c, 0.f);
-    } else {
-        m_focusOffset1 = sf::Vector2f(0.f, -c);
-        m_focusOffset2 = sf::Vector2f(0.f,  c);
-    }
+    // Foci always along X axis; visual orientation is via rotationAngle
+    m_focusOffset1 = sf::Vector2f(-c, 0.f);
+    m_focusOffset2 = sf::Vector2f( c, 0.f);
 }
 
 void Circle::recalcRadiiFromFoci() {
-    // Determine the foci direction components
+    // Determine focus direction in world-like coordinates
+    // (m_focusOffset holds the raw direction before normalization)
     float fx, fy;
     if (m_symmetricFoci) {
-        fx = std::abs(m_focusOffset1.x);
-        fy = std::abs(m_focusOffset1.y);
+        fx = m_focusOffset1.x;
+        fy = m_focusOffset1.y;
     } else {
-        fx = std::abs(m_focusOffset2.x - m_focusOffset1.x);
-        fy = std::abs(m_focusOffset2.y - m_focusOffset1.y);
+        fx = (m_focusOffset2.x - m_focusOffset1.x) / 2.f;
+        fy = (m_focusOffset2.y - m_focusOffset1.y) / 2.f;
     }
 
-    // Calculate focal distance
-    float c;
-    if (m_symmetricFoci) {
-        c = std::sqrt(m_focusOffset1.x * m_focusOffset1.x +
-                      m_focusOffset1.y * m_focusOffset1.y);
-    } else {
-        float dx = m_focusOffset2.x - m_focusOffset1.x;
-        float dy = m_focusOffset2.y - m_focusOffset1.y;
-        c = std::sqrt(dx * dx + dy * dy) / 2.f;
-    }
+    // 1. Compute rotation angle from focus direction
+    float focusAngle = std::atan2(fy, fx); // radians
+    rotationAngle = focusAngle * 180.f / math::PI;
 
-    // Use stored semi-major axis to prevent drift during blending
+    // 2. Compute focal distance
+    float c = std::sqrt(fx * fx + fy * fy);
+
+    // 3. Use stored semi-major axis to prevent drift
     float a = m_semiMajor;
     if (a < 1.f) a = std::max(m_radiusX, m_radiusY); // fallback
 
-    // Clamp c so it doesn't exceed major radius; also clamp the offsets
+    // 4. Clamp c so it doesn't exceed major radius
     if (c >= a) {
-        float s = (a - 0.1f) / c;
-        m_focusOffset1.x *= s;
-        m_focusOffset1.y *= s;
-        m_focusOffset2.x *= s;
-        m_focusOffset2.y *= s;
         c = a - 0.1f;
     }
 
+    // 5. Compute minor semi-axis
     float b = std::sqrt(a * a - c * c);
     if (b < 1.f) b = 1.f;
 
-    // Smooth blending based on focus angle:
-    //   t = 0 → foci horizontal → rx=a, ry=b
-    //   t = 1 → foci vertical   → rx=b, ry=a
-    //   t = 0.5 → diagonal      → rx=ry (circle)
-    float denom = fx * fx + fy * fy;
-    if (denom < 0.001f) {
-        // Foci at center — make it a circle with radius a
-        m_radiusX = a;
-        m_radiusY = a;
-    } else {
-        float t = (fy * fy) / denom;  // sin²(θ)
-        m_radiusX = a * (1.f - t) + b * t;
-        m_radiusY = a * t + b * (1.f - t);
-    }
+    // 6. Set radii: major axis always along X
+    m_radiusX = a;
+    m_radiusY = b;
+
+    // 7. Normalize foci offsets to lie along X axis
+    m_focusOffset1 = sf::Vector2f(-c, 0.f);
+    m_focusOffset2 = sf::Vector2f( c, 0.f);
+
     updateVertices();
 }
 
@@ -175,17 +158,14 @@ float Circle::getFocalDistance() const {
 
 void Circle::setFocalDistance(float c) {
     if (c < 0.f) c = 0.f;
-    float a = std::max(m_radiusX, m_radiusY);
+    float a = m_semiMajor;
+    if (a < 1.f) a = std::max(m_radiusX, m_radiusY);
     // Clamp c so it doesn't exceed the major axis
     if (c >= a) c = a - 0.1f;
     float b = std::sqrt(a * a - c * c);
     if (b < 1.f) b = 1.f;
-    // Recalculate the minor axis
-    if (m_radiusX >= m_radiusY) {
-        setRadius(m_radiusX, b);
-    } else {
-        setRadius(b, m_radiusY);
-    }
+    // Major axis always along X; rotation handles orientation
+    setRadius(a, b);
 }
 
 sf::Vector2f Circle::getFocus1() const {
@@ -197,17 +177,29 @@ sf::Vector2f Circle::getFocus2() const {
 }
 
 void Circle::setFocus1(sf::Vector2f offset) {
-    m_focusOffset1 = offset;
+    // offset comes in local coords (rotation already stripped by drag handler).
+    // We need to convert to world-direction by applying current rotationAngle,
+    // so recalcRadiiFromFoci can extract the new angle from it.
+    float rad = rotationAngle * math::PI / 180.f;
+    float worldX = offset.x * std::cos(rad) - offset.y * std::sin(rad);
+    float worldY = offset.x * std::sin(rad) + offset.y * std::cos(rad);
+
+    m_focusOffset1 = sf::Vector2f(worldX, worldY);
     if (m_symmetricFoci) {
-        m_focusOffset2 = sf::Vector2f(-offset.x, -offset.y);
+        m_focusOffset2 = sf::Vector2f(-worldX, -worldY);
     }
     recalcRadiiFromFoci();
 }
 
 void Circle::setFocus2(sf::Vector2f offset) {
-    m_focusOffset2 = offset;
+    // Same transform: local → world direction
+    float rad = rotationAngle * math::PI / 180.f;
+    float worldX = offset.x * std::cos(rad) - offset.y * std::sin(rad);
+    float worldY = offset.x * std::sin(rad) + offset.y * std::cos(rad);
+
+    m_focusOffset2 = sf::Vector2f(worldX, worldY);
     if (m_symmetricFoci) {
-        m_focusOffset1 = sf::Vector2f(-offset.x, -offset.y);
+        m_focusOffset1 = sf::Vector2f(-worldX, -worldY);
     }
     recalcRadiiFromFoci();
 }
