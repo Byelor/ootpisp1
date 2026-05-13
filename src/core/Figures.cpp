@@ -178,30 +178,21 @@ sf::Vector2f Circle::getFocus2() const {
     return m_focusOffset2;
 }
 
-void Circle::setFocus1(sf::Vector2f offset) {
-    // offset comes in local coords (rotation already stripped by drag handler).
-    // We need to convert to world-direction by applying current rotationAngle,
-    // so recalcRadiiFromFoci can extract the new angle from it.
-    float rad = rotationAngle * math::PI / 180.f;
-    float worldX = offset.x * std::cos(rad) - offset.y * std::sin(rad);
-    float worldY = offset.x * std::sin(rad) + offset.y * std::cos(rad);
-
-    m_focusOffset1 = sf::Vector2f(worldX, worldY);
+void Circle::setFocus1(sf::Vector2f worldDir) {
+    // worldDir is the world-space direction from center to focus.
+    // Callers must pass (absPos - absoluteAnchor) directly.
+    m_focusOffset1 = worldDir;
     if (m_symmetricFoci) {
-        m_focusOffset2 = sf::Vector2f(-worldX, -worldY);
+        m_focusOffset2 = sf::Vector2f(-worldDir.x, -worldDir.y);
     }
     recalcRadiiFromFoci();
 }
 
-void Circle::setFocus2(sf::Vector2f offset) {
-    // Same transform: local → world direction
-    float rad = rotationAngle * math::PI / 180.f;
-    float worldX = offset.x * std::cos(rad) - offset.y * std::sin(rad);
-    float worldY = offset.x * std::sin(rad) + offset.y * std::cos(rad);
-
-    m_focusOffset2 = sf::Vector2f(worldX, worldY);
+void Circle::setFocus2(sf::Vector2f worldDir) {
+    // worldDir is the world-space direction from center to focus.
+    m_focusOffset2 = worldDir;
     if (m_symmetricFoci) {
-        m_focusOffset1 = sf::Vector2f(-worldX, -worldY);
+        m_focusOffset1 = sf::Vector2f(-worldDir.x, -worldDir.y);
     }
     recalcRadiiFromFoci();
 }

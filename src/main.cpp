@@ -876,11 +876,12 @@ int main() {
                         break;
                     }
                     case CircleHandle::Focus1: {
-                        circ->setFocus1(sf::Vector2f(localX, localY));
+                        // Pass world-direction delta directly (absPos - anchor)
+                        circ->setFocus1(deltaAbs);
                         break;
                     }
                     case CircleHandle::Focus2: {
-                        circ->setFocus2(sf::Vector2f(localX, localY));
+                        circ->setFocus2(deltaAbs);
                         break;
                     }
                     default: break;
