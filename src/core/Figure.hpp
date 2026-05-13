@@ -19,6 +19,7 @@ struct Edge {
 
 class Figure {
 public:
+  void rotateAroundPoint(sf::Vector2f pivotAbsolute, float deltaRad); 
   virtual ~Figure() = default;
   virtual std::unique_ptr<Figure> clone() const = 0;
   virtual std::string typeName() const = 0;

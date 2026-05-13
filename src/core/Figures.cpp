@@ -1,9 +1,30 @@
 #include "Figures.hpp"
+#include "CompositeFigure.hpp"
 #include "MathUtils.hpp"
 #include <cmath>
 
 namespace core {
 
+    void Figure::rotateAroundPoint(sf::Vector2f pivotAbsolute, float deltaRad) {
+    sf::Vector2f anchorAbs = getAbsoluteAnchor();
+    sf::Vector2f rel = anchorAbs - pivotAbsolute;
+
+    float c = std::cos(deltaRad);
+    float s = std::sin(deltaRad);
+    sf::Vector2f rotated(rel.x * c - rel.y * s,
+                         rel.x * s + rel.y * c);
+
+    sf::Vector2f newAnchorAbs = pivotAbsolute + rotated;
+
+    // anchor хранится в локальных координатах родителя
+    if (parentFigure) {
+        // редкий случай, пока не нужен
+    } else {
+        anchor = newAnchorAbs - parentOrigin;
+    }
+
+    rotationAngle += deltaRad * math::RAD_TO_DEG;
+}
 // ─── Circle 
 Circle::Circle(float radiusX, float radiusY) : m_radiusX(radiusX), m_radiusY(radiusY) {
     figureName = "Circle";
@@ -32,51 +53,6 @@ void Circle::recalcFociFromRadii() {
     m_focusOffset2 = sf::Vector2f( c, 0.f);
 }
 
-void Circle::recalcRadiiFromFoci() {
-    // Determine focus direction in world-like coordinates
-    // (m_focusOffset holds the raw direction before normalization)
-    float fx, fy;
-    if (m_symmetricFoci) {
-        fx = m_focusOffset1.x;
-        fy = m_focusOffset1.y;
-    } else {
-        fx = (m_focusOffset2.x - m_focusOffset1.x) / 2.f;
-        fy = (m_focusOffset2.y - m_focusOffset1.y) / 2.f;
-    }
-
-    // 1. Compute rotation angle from focus direction
-    // Focus1 is stored as (-c, 0), so rotating (-c, 0) by θ must give (fx, fy):
-    //   -c·cos(θ) = fx,  -c·sin(θ) = fy  →  θ = atan2(-fy, -fx)
-    float focusAngle = std::atan2(-fy, -fx); // radians
-    rotationAngle = focusAngle * 180.f / math::PI;
-
-    // 2. Compute focal distance
-    float c = std::sqrt(fx * fx + fy * fy);
-
-    // 3. Use stored semi-major axis to prevent drift
-    float a = m_semiMajor;
-    if (a < 1.f) a = std::max(m_radiusX, m_radiusY); // fallback
-
-    // 4. Clamp c so it doesn't exceed major radius
-    if (c >= a) {
-        c = a - 0.1f;
-    }
-
-    // 5. Compute minor semi-axis
-    float b = std::sqrt(a * a - c * c);
-    if (b < 1.f) b = 1.f;
-
-    // 6. Set radii: major axis always along X
-    m_radiusX = a;
-    m_radiusY = b;
-
-    // 7. Normalize foci offsets to lie along X axis
-    m_focusOffset1 = sf::Vector2f(-c, 0.f);
-    m_focusOffset2 = sf::Vector2f( c, 0.f);
-
-    updateVertices();
-}
-
 void Circle::setRadius(float rx, float ry) {
     m_radiusX = rx;
     m_radiusY = ry;
@@ -95,7 +71,8 @@ std::unique_ptr<Figure> Circle::clone() const {
     copy->edges = edges;
     copy->m_focusOffset1 = m_focusOffset1;
     copy->m_focusOffset2 = m_focusOffset2;
-    copy->m_symmetricFoci = m_symmetricFoci;
+    copy->m_focus1Pivot = m_focus1Pivot;
+    copy->m_focus2Pivot = m_focus2Pivot;
     copy->m_semiMajor = m_semiMajor;
     return copy;
 }
@@ -108,7 +85,8 @@ nlohmann::json Circle::serializeToJson() const {
     j["focus1_y"] = m_focusOffset1.y;
     j["focus2_x"] = m_focusOffset2.x;
     j["focus2_y"] = m_focusOffset2.y;
-    j["symmetric_foci"] = m_symmetricFoci;
+    j["focus1_pivot"] = static_cast<int>(m_focus1Pivot);
+    j["focus2_pivot"] = static_cast<int>(m_focus2Pivot);
     j["semi_major"] = m_semiMajor;
     return j;
 }
@@ -129,8 +107,11 @@ void Circle::deserializeFromJson(const nlohmann::json& j) {
         m_focusOffset2.x = j["focus2_x"].get<float>();
         m_focusOffset2.y = j["focus2_y"].get<float>();
     }
-    if (j.contains("symmetric_foci")) {
-        m_symmetricFoci = j["symmetric_foci"].get<bool>();
+    if (j.contains("focus1_pivot")) {
+        m_focus1Pivot = static_cast<FocusPivot>(j["focus1_pivot"].get<int>());
+    }
+    if (j.contains("focus2_pivot")) {
+        m_focus2Pivot = static_cast<FocusPivot>(j["focus2_pivot"].get<int>());
     }
     if (j.contains("semi_major")) {
         m_semiMajor = j["semi_major"].get<float>();
@@ -178,31 +159,123 @@ sf::Vector2f Circle::getFocus2() const {
     return m_focusOffset2;
 }
 
-void Circle::setFocus1(sf::Vector2f worldDir) {
-    // worldDir is the world-space direction from center to focus.
-    // Callers must pass (absPos - absoluteAnchor) directly.
-    m_focusOffset1 = worldDir;
-    if (m_symmetricFoci) {
-        m_focusOffset2 = sf::Vector2f(-worldDir.x, -worldDir.y);
+void Circle::setFocus1Absolute(sf::Vector2f newAbsF1) {
+    if (m_focus1Pivot == FocusPivot::Anchor) {
+        sf::Vector2f oldAbsAnchor = getAbsoluteAnchor();
+        sf::Vector2f worldDir = newAbsF1 - oldAbsAnchor;
+        
+        float c = std::sqrt(worldDir.x * worldDir.x + worldDir.y * worldDir.y);
+        float requiredAbsRot = std::atan2(-worldDir.y, -worldDir.x) * 180.f / math::PI;
+        float parentAbsRot = parentFigure ? parentFigure->getAbsoluteRotation() : 0.f;
+        rotationAngle = requiredAbsRot - parentAbsRot;
+
+        m_focusOffset1 = sf::Vector2f(-c, 0.f);
+        m_focusOffset2 = sf::Vector2f( c, 0.f);
+        
+        float a = m_semiMajor;
+        if (a < 1.f) a = std::max(m_radiusX, m_radiusY);
+        if (c >= a) a = c + 0.1f;
+        float b = std::sqrt(a * a - c * c);
+        if (b < 1.f) b = 1.f;
+        
+        m_radiusX = a;
+        m_radiusY = b;
+        m_semiMajor = a;
+        updateVertices();
+    } else {
+        sf::Vector2f oldAbsF2 = getAbsoluteVertex(m_focusOffset2);
+        sf::Vector2f newCenter = (newAbsF1 + oldAbsF2) / 2.f;
+        
+        if (parentFigure) {
+            sf::Vector2f parentAbsAnchor = parentFigure->getAbsoluteAnchor();
+            sf::Vector2f delta = newCenter - parentAbsAnchor;
+            float parentAbsRot = parentFigure->getAbsoluteRotation();
+            sf::Vector2f unrotated = core::math::rotate(delta, -parentAbsRot * core::math::DEG_TO_RAD);
+            sf::Vector2f parentAbsScale = parentFigure->getAbsoluteScale();
+            anchor = {unrotated.x / parentAbsScale.x, unrotated.y / parentAbsScale.y};
+        } else {
+            anchor = newCenter - parentOrigin;
+        }
+
+        sf::Vector2f dirF2 = oldAbsF2 - newCenter;
+        float c = std::sqrt(dirF2.x * dirF2.x + dirF2.y * dirF2.y);
+        float requiredAbsRot = std::atan2(dirF2.y, dirF2.x) * 180.f / math::PI;
+        float parentAbsRot = parentFigure ? parentFigure->getAbsoluteRotation() : 0.f;
+        rotationAngle = requiredAbsRot - parentAbsRot;
+
+        m_focusOffset1 = sf::Vector2f(-c, 0.f);
+        m_focusOffset2 = sf::Vector2f( c, 0.f);
+        
+        float a = m_semiMajor;
+        if (a < 1.f) a = std::max(m_radiusX, m_radiusY);
+        if (c >= a) a = c + 0.1f;
+        float b = std::sqrt(a * a - c * c);
+        if (b < 1.f) b = 1.f;
+        
+        m_radiusX = a;
+        m_radiusY = b;
+        m_semiMajor = a;
+        updateVertices();
     }
-    recalcRadiiFromFoci();
 }
 
-void Circle::setFocus2(sf::Vector2f worldDir) {
-    // worldDir is the world-space direction from center to focus.
-    m_focusOffset2 = worldDir;
-    if (m_symmetricFoci) {
-        m_focusOffset1 = sf::Vector2f(-worldDir.x, -worldDir.y);
-    }
-    recalcRadiiFromFoci();
-}
+void Circle::setFocus2Absolute(sf::Vector2f newAbsF2) {
+    if (m_focus2Pivot == FocusPivot::Anchor) {
+        sf::Vector2f oldAbsAnchor = getAbsoluteAnchor();
+        sf::Vector2f worldDir = newAbsF2 - oldAbsAnchor;
+        
+        float c = std::sqrt(worldDir.x * worldDir.x + worldDir.y * worldDir.y);
+        float requiredAbsRot = std::atan2(worldDir.y, worldDir.x) * 180.f / math::PI;
+        float parentAbsRot = parentFigure ? parentFigure->getAbsoluteRotation() : 0.f;
+        rotationAngle = requiredAbsRot - parentAbsRot;
 
-void Circle::setSymmetricFoci(bool sym) {
-    m_symmetricFoci = sym;
-    if (sym) {
-        // When enabling symmetry, mirror Focus2 from Focus1
-        m_focusOffset2 = sf::Vector2f(-m_focusOffset1.x, -m_focusOffset1.y);
-        recalcRadiiFromFoci();
+        m_focusOffset1 = sf::Vector2f(-c, 0.f);
+        m_focusOffset2 = sf::Vector2f( c, 0.f);
+        
+        float a = m_semiMajor;
+        if (a < 1.f) a = std::max(m_radiusX, m_radiusY);
+        if (c >= a) a = c + 0.1f;
+        float b = std::sqrt(a * a - c * c);
+        if (b < 1.f) b = 1.f;
+        
+        m_radiusX = a;
+        m_radiusY = b;
+        m_semiMajor = a;
+        updateVertices();
+    } else {
+        sf::Vector2f oldAbsF1 = getAbsoluteVertex(m_focusOffset1);
+        sf::Vector2f newCenter = (oldAbsF1 + newAbsF2) / 2.f;
+        
+        if (parentFigure) {
+            sf::Vector2f parentAbsAnchor = parentFigure->getAbsoluteAnchor();
+            sf::Vector2f delta = newCenter - parentAbsAnchor;
+            float parentAbsRot = parentFigure->getAbsoluteRotation();
+            sf::Vector2f unrotated = core::math::rotate(delta, -parentAbsRot * core::math::DEG_TO_RAD);
+            sf::Vector2f parentAbsScale = parentFigure->getAbsoluteScale();
+            anchor = {unrotated.x / parentAbsScale.x, unrotated.y / parentAbsScale.y};
+        } else {
+            anchor = newCenter - parentOrigin;
+        }
+
+        sf::Vector2f dirF2 = newAbsF2 - newCenter;
+        float c = std::sqrt(dirF2.x * dirF2.x + dirF2.y * dirF2.y);
+        float requiredAbsRot = std::atan2(dirF2.y, dirF2.x) * 180.f / math::PI;
+        float parentAbsRot = parentFigure ? parentFigure->getAbsoluteRotation() : 0.f;
+        rotationAngle = requiredAbsRot - parentAbsRot;
+
+        m_focusOffset1 = sf::Vector2f(-c, 0.f);
+        m_focusOffset2 = sf::Vector2f( c, 0.f);
+        
+        float a = m_semiMajor;
+        if (a < 1.f) a = std::max(m_radiusX, m_radiusY);
+        if (c >= a) a = c + 0.1f;
+        float b = std::sqrt(a * a - c * c);
+        if (b < 1.f) b = 1.f;
+        
+        m_radiusX = a;
+        m_radiusY = b;
+        m_semiMajor = a;
+        updateVertices();
     }
 }
 

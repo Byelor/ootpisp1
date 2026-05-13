@@ -22,25 +22,31 @@ public:
     float getRadiusY() const { return m_radiusY; }
     void setRadius(float rx, float ry);
 
+    enum class FocusPivot { Anchor, OtherFocus };
+
     // Foci methods
     float getFocalDistance() const;
     void setFocalDistance(float c);
     sf::Vector2f getFocus1() const;
     sf::Vector2f getFocus2() const;
-    void setFocus1(sf::Vector2f offset);
-    void setFocus2(sf::Vector2f offset);
 
-    bool isSymmetricFoci() const { return m_symmetricFoci; }
-    void setSymmetricFoci(bool sym);
+    FocusPivot getFocus1Pivot() const { return m_focus1Pivot; }
+    void setFocus1Pivot(FocusPivot p) { m_focus1Pivot = p; }
+    
+    FocusPivot getFocus2Pivot() const { return m_focus2Pivot; }
+    void setFocus2Pivot(FocusPivot p) { m_focus2Pivot = p; }
+
+    void setFocus1Absolute(sf::Vector2f absolutePos);
+    void setFocus2Absolute(sf::Vector2f absolutePos);
     
 private:
     void updateVertices();
     void recalcFociFromRadii();
-    void recalcRadiiFromFoci();
     float m_radiusX, m_radiusY;
     sf::Vector2f m_focusOffset1{0.f, 0.f};
     sf::Vector2f m_focusOffset2{0.f, 0.f};
-    bool m_symmetricFoci = true;
+    FocusPivot m_focus1Pivot = FocusPivot::Anchor;
+    FocusPivot m_focus2Pivot = FocusPivot::Anchor;
     float m_semiMajor = 0.f;  // preserved semi-major axis for smooth blending
 };
 
