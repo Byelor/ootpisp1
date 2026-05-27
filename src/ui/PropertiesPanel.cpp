@@ -244,7 +244,28 @@ bool PropertiesPanel::render(core::Scene &scene, core::Viewport &viewport, std::
         }
         ImGui::SetNextItemWidth(-1.f);
         if (ImGui::DragFloat2("##Focus 1", f1v, 0.5f, -5000.f, 5000.f, "%.1f")) {
+            float c = circ->getFocus2().x;
+            float targetDist = (f1PivotIdx == 0) ? c : 2.f * c;
+            sf::Vector2f pivotAbs = (f1PivotIdx == 0) ? circ->getAbsoluteAnchor() : circ->getAbsoluteVertex(circ->getFocus2());
+            sf::Vector2f oldRel = absF1 - pivotAbs;
             sf::Vector2f newAbs(f1v[0] + circ->parentOrigin.x, f1v[1] + circ->parentOrigin.y);
+            sf::Vector2f newRel = newAbs - pivotAbs;
+
+            float dx = std::abs(newRel.x - oldRel.x);
+            float dy = std::abs(newRel.y - oldRel.y);
+
+            if (dx > 0.001f && dy <= 0.001f) {
+                float clampedX = std::max(-targetDist, std::min(targetDist, newRel.x));
+                float newY = std::sqrt(std::max(0.f, targetDist * targetDist - clampedX * clampedX));
+                if (oldRel.y < -0.001f) newY = -newY;
+                newAbs = pivotAbs + sf::Vector2f(clampedX, newY);
+            } else if (dy > 0.001f && dx <= 0.001f) {
+                float clampedY = std::max(-targetDist, std::min(targetDist, newRel.y));
+                float newX = std::sqrt(std::max(0.f, targetDist * targetDist - clampedY * clampedY));
+                if (oldRel.x < -0.001f) newX = -newX;
+                newAbs = pivotAbs + sf::Vector2f(newX, clampedY);
+            }
+
             circ->setFocus1Absolute(newAbs);
         }
 
@@ -263,7 +284,28 @@ bool PropertiesPanel::render(core::Scene &scene, core::Viewport &viewport, std::
         }
         ImGui::SetNextItemWidth(-1.f);
         if (ImGui::DragFloat2("##Focus 2", f2v, 0.5f, -5000.f, 5000.f, "%.1f")) {
+            float c = circ->getFocus2().x;
+            float targetDist = (f2PivotIdx == 0) ? c : 2.f * c;
+            sf::Vector2f pivotAbs = (f2PivotIdx == 0) ? circ->getAbsoluteAnchor() : circ->getAbsoluteVertex(circ->getFocus1());
+            sf::Vector2f oldRel = absF2 - pivotAbs;
             sf::Vector2f newAbs(f2v[0] + circ->parentOrigin.x, f2v[1] + circ->parentOrigin.y);
+            sf::Vector2f newRel = newAbs - pivotAbs;
+
+            float dx = std::abs(newRel.x - oldRel.x);
+            float dy = std::abs(newRel.y - oldRel.y);
+
+            if (dx > 0.001f && dy <= 0.001f) {
+                float clampedX = std::max(-targetDist, std::min(targetDist, newRel.x));
+                float newY = std::sqrt(std::max(0.f, targetDist * targetDist - clampedX * clampedX));
+                if (oldRel.y < -0.001f) newY = -newY;
+                newAbs = pivotAbs + sf::Vector2f(clampedX, newY);
+            } else if (dy > 0.001f && dx <= 0.001f) {
+                float clampedY = std::max(-targetDist, std::min(targetDist, newRel.y));
+                float newX = std::sqrt(std::max(0.f, targetDist * targetDist - clampedY * clampedY));
+                if (oldRel.x < -0.001f) newX = -newX;
+                newAbs = pivotAbs + sf::Vector2f(newX, clampedY);
+            }
+
             circ->setFocus2Absolute(newAbs);
         }
 

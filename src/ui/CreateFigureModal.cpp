@@ -142,24 +142,34 @@ std::unique_ptr<core::Figure> CreateFigureModal::createConfiguredFigure(
     int idx = m_figureType - 2;
     if (idx >= 0 && idx < (int)userRegistry.size()) {
       fig = userRegistry[idx]->clone();
-      if (fig->typeName() == "polyline")
-        static_cast<core::PolylineFigure*>(fig.get())->figureName = m_customName;
-      else if (fig->typeName() == "composite")
-        static_cast<core::CompositeFigure*>(fig.get())->figureName = m_customName;
+
+
+
+
     }
   }
 
   if (!fig) return nullptr;
 
-  fig->fillColor = sf::Color(
-      (sf::Uint8)(m_fillColor[0]*255), (sf::Uint8)(m_fillColor[1]*255),
-      (sf::Uint8)(m_fillColor[2]*255), (sf::Uint8)(m_fillColor[3]*255));
 
-  for (size_t i = 0; i < m_edges.size() && i < fig->edges.size(); ++i) {
-    fig->edges[i].width = m_edges[i].width;
-    fig->edges[i].color = sf::Color(
-        (sf::Uint8)(m_edges[i].color[0]*255), (sf::Uint8)(m_edges[i].color[1]*255),
-        (sf::Uint8)(m_edges[i].color[2]*255), (sf::Uint8)(m_edges[i].color[3]*255));
+
+
+  if (m_figureType == 0) {
+    fig->fillColor = sf::Color(
+        (sf::Uint8)(m_fillColor[0]*255), (sf::Uint8)(m_fillColor[1]*255),
+        (sf::Uint8)(m_fillColor[2]*255), (sf::Uint8)(m_fillColor[3]*255));
+
+
+
+
+
+
+    for (size_t i = 0; i < m_edges.size() && i < fig->edges.size(); ++i) {
+      fig->edges[i].width = m_edges[i].width;
+      fig->edges[i].color = sf::Color(
+          (sf::Uint8)(m_edges[i].color[0]*255), (sf::Uint8)(m_edges[i].color[1]*255),
+          (sf::Uint8)(m_edges[i].color[2]*255), (sf::Uint8)(m_edges[i].color[3]*255));
+    }
   }
   return fig;
 }
@@ -452,11 +462,6 @@ void CreateFigureModal::render(core::Scene& scene,
     if (ImGui::Button("Place", ImVec2(140, 0))) {
       auto fig = createConfiguredFigure(userRegistry);
       if (fig) {
-        fig->anchor = scene.customOriginActive
-            ? m_createPos - scene.customOriginPos
-            : m_createPos;
-        fig->parentOrigin = scene.customOriginActive
-            ? scene.customOriginPos : sf::Vector2f(0.f,0.f);
         scene.setSelectedFigure(fig.get());
         scene.addFigure(std::move(fig));
       }

@@ -160,121 +160,84 @@ sf::Vector2f Circle::getFocus2() const {
 }
 
 void Circle::setFocus1Absolute(sf::Vector2f newAbsF1) {
+    float existing_c = m_focusOffset2.x;
     if (m_focus1Pivot == FocusPivot::Anchor) {
         sf::Vector2f oldAbsAnchor = getAbsoluteAnchor();
         sf::Vector2f worldDir = newAbsF1 - oldAbsAnchor;
         
-        float c = std::sqrt(worldDir.x * worldDir.x + worldDir.y * worldDir.y);
-        float requiredAbsRot = std::atan2(-worldDir.y, -worldDir.x) * 180.f / math::PI;
-        float parentAbsRot = parentFigure ? parentFigure->getAbsoluteRotation() : 0.f;
-        rotationAngle = requiredAbsRot - parentAbsRot;
-
-        m_focusOffset1 = sf::Vector2f(-c, 0.f);
-        m_focusOffset2 = sf::Vector2f( c, 0.f);
-        
-        float a = m_semiMajor;
-        if (a < 1.f) a = std::max(m_radiusX, m_radiusY);
-        if (c >= a) a = c + 0.1f;
-        float b = std::sqrt(a * a - c * c);
-        if (b < 1.f) b = 1.f;
-        
-        m_radiusX = a;
-        m_radiusY = b;
-        m_semiMajor = a;
+        if (worldDir.x != 0.f || worldDir.y != 0.f) {
+            float requiredAbsRot = std::atan2(-worldDir.y, -worldDir.x) * 180.f / math::PI;
+            float parentAbsRot = parentFigure ? parentFigure->getAbsoluteRotation() : 0.f;
+            rotationAngle = requiredAbsRot - parentAbsRot;
+        }
         updateVertices();
     } else {
         sf::Vector2f oldAbsF2 = getAbsoluteVertex(m_focusOffset2);
-        sf::Vector2f newCenter = (newAbsF1 + oldAbsF2) / 2.f;
+        sf::Vector2f dirF1 = newAbsF1 - oldAbsF2; // direction from F2 to F1
         
-        if (parentFigure) {
-            sf::Vector2f parentAbsAnchor = parentFigure->getAbsoluteAnchor();
-            sf::Vector2f delta = newCenter - parentAbsAnchor;
-            float parentAbsRot = parentFigure->getAbsoluteRotation();
-            sf::Vector2f unrotated = core::math::rotate(delta, -parentAbsRot * core::math::DEG_TO_RAD);
-            sf::Vector2f parentAbsScale = parentFigure->getAbsoluteScale();
-            anchor = {unrotated.x / parentAbsScale.x, unrotated.y / parentAbsScale.y};
-        } else {
-            anchor = newCenter - parentOrigin;
+        if (dirF1.x != 0.f || dirF1.y != 0.f) {
+            float len = std::sqrt(dirF1.x * dirF1.x + dirF1.y * dirF1.y);
+            sf::Vector2f normDir(dirF1.x / len, dirF1.y / len);
+            
+            sf::Vector2f newCenter = oldAbsF2 + normDir * existing_c;
+            
+            if (parentFigure) {
+                sf::Vector2f parentAbsAnchor = parentFigure->getAbsoluteAnchor();
+                sf::Vector2f delta = newCenter - parentAbsAnchor;
+                float parentAbsRot = parentFigure->getAbsoluteRotation();
+                sf::Vector2f unrotated = core::math::rotate(delta, -parentAbsRot * core::math::DEG_TO_RAD);
+                sf::Vector2f parentAbsScale = parentFigure->getAbsoluteScale();
+                anchor = {unrotated.x / parentAbsScale.x, unrotated.y / parentAbsScale.y};
+            } else {
+                anchor = newCenter - parentOrigin;
+            }
+
+            sf::Vector2f dirF2(-normDir.x, -normDir.y);
+            float requiredAbsRot = std::atan2(dirF2.y, dirF2.x) * 180.f / math::PI;
+            float parentAbsRot = parentFigure ? parentFigure->getAbsoluteRotation() : 0.f;
+            rotationAngle = requiredAbsRot - parentAbsRot;
         }
-
-        sf::Vector2f dirF2 = oldAbsF2 - newCenter;
-        float c = std::sqrt(dirF2.x * dirF2.x + dirF2.y * dirF2.y);
-        float requiredAbsRot = std::atan2(dirF2.y, dirF2.x) * 180.f / math::PI;
-        float parentAbsRot = parentFigure ? parentFigure->getAbsoluteRotation() : 0.f;
-        rotationAngle = requiredAbsRot - parentAbsRot;
-
-        m_focusOffset1 = sf::Vector2f(-c, 0.f);
-        m_focusOffset2 = sf::Vector2f( c, 0.f);
-        
-        float a = m_semiMajor;
-        if (a < 1.f) a = std::max(m_radiusX, m_radiusY);
-        if (c >= a) a = c + 0.1f;
-        float b = std::sqrt(a * a - c * c);
-        if (b < 1.f) b = 1.f;
-        
-        m_radiusX = a;
-        m_radiusY = b;
-        m_semiMajor = a;
         updateVertices();
     }
 }
 
 void Circle::setFocus2Absolute(sf::Vector2f newAbsF2) {
+    float existing_c = m_focusOffset2.x;
     if (m_focus2Pivot == FocusPivot::Anchor) {
         sf::Vector2f oldAbsAnchor = getAbsoluteAnchor();
         sf::Vector2f worldDir = newAbsF2 - oldAbsAnchor;
         
-        float c = std::sqrt(worldDir.x * worldDir.x + worldDir.y * worldDir.y);
-        float requiredAbsRot = std::atan2(worldDir.y, worldDir.x) * 180.f / math::PI;
-        float parentAbsRot = parentFigure ? parentFigure->getAbsoluteRotation() : 0.f;
-        rotationAngle = requiredAbsRot - parentAbsRot;
-
-        m_focusOffset1 = sf::Vector2f(-c, 0.f);
-        m_focusOffset2 = sf::Vector2f( c, 0.f);
-        
-        float a = m_semiMajor;
-        if (a < 1.f) a = std::max(m_radiusX, m_radiusY);
-        if (c >= a) a = c + 0.1f;
-        float b = std::sqrt(a * a - c * c);
-        if (b < 1.f) b = 1.f;
-        
-        m_radiusX = a;
-        m_radiusY = b;
-        m_semiMajor = a;
+        if (worldDir.x != 0.f || worldDir.y != 0.f) {
+            float requiredAbsRot = std::atan2(worldDir.y, worldDir.x) * 180.f / math::PI;
+            float parentAbsRot = parentFigure ? parentFigure->getAbsoluteRotation() : 0.f;
+            rotationAngle = requiredAbsRot - parentAbsRot;
+        }
         updateVertices();
     } else {
         sf::Vector2f oldAbsF1 = getAbsoluteVertex(m_focusOffset1);
-        sf::Vector2f newCenter = (oldAbsF1 + newAbsF2) / 2.f;
+        sf::Vector2f dirF2 = newAbsF2 - oldAbsF1; // direction from F1 to F2
         
-        if (parentFigure) {
-            sf::Vector2f parentAbsAnchor = parentFigure->getAbsoluteAnchor();
-            sf::Vector2f delta = newCenter - parentAbsAnchor;
-            float parentAbsRot = parentFigure->getAbsoluteRotation();
-            sf::Vector2f unrotated = core::math::rotate(delta, -parentAbsRot * core::math::DEG_TO_RAD);
-            sf::Vector2f parentAbsScale = parentFigure->getAbsoluteScale();
-            anchor = {unrotated.x / parentAbsScale.x, unrotated.y / parentAbsScale.y};
-        } else {
-            anchor = newCenter - parentOrigin;
+        if (dirF2.x != 0.f || dirF2.y != 0.f) {
+            float len = std::sqrt(dirF2.x * dirF2.x + dirF2.y * dirF2.y);
+            sf::Vector2f normDir(dirF2.x / len, dirF2.y / len);
+            
+            sf::Vector2f newCenter = oldAbsF1 + normDir * existing_c;
+            
+            if (parentFigure) {
+                sf::Vector2f parentAbsAnchor = parentFigure->getAbsoluteAnchor();
+                sf::Vector2f delta = newCenter - parentAbsAnchor;
+                float parentAbsRot = parentFigure->getAbsoluteRotation();
+                sf::Vector2f unrotated = core::math::rotate(delta, -parentAbsRot * core::math::DEG_TO_RAD);
+                sf::Vector2f parentAbsScale = parentFigure->getAbsoluteScale();
+                anchor = {unrotated.x / parentAbsScale.x, unrotated.y / parentAbsScale.y};
+            } else {
+                anchor = newCenter - parentOrigin;
+            }
+
+            float requiredAbsRot = std::atan2(normDir.y, normDir.x) * 180.f / math::PI;
+            float parentAbsRot = parentFigure ? parentFigure->getAbsoluteRotation() : 0.f;
+            rotationAngle = requiredAbsRot - parentAbsRot;
         }
-
-        sf::Vector2f dirF2 = newAbsF2 - newCenter;
-        float c = std::sqrt(dirF2.x * dirF2.x + dirF2.y * dirF2.y);
-        float requiredAbsRot = std::atan2(dirF2.y, dirF2.x) * 180.f / math::PI;
-        float parentAbsRot = parentFigure ? parentFigure->getAbsoluteRotation() : 0.f;
-        rotationAngle = requiredAbsRot - parentAbsRot;
-
-        m_focusOffset1 = sf::Vector2f(-c, 0.f);
-        m_focusOffset2 = sf::Vector2f( c, 0.f);
-        
-        float a = m_semiMajor;
-        if (a < 1.f) a = std::max(m_radiusX, m_radiusY);
-        if (c >= a) a = c + 0.1f;
-        float b = std::sqrt(a * a - c * c);
-        if (b < 1.f) b = 1.f;
-        
-        m_radiusX = a;
-        m_radiusY = b;
-        m_semiMajor = a;
         updateVertices();
     }
 }

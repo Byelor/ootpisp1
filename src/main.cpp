@@ -144,11 +144,11 @@ int main() {
       fig->applyScale();
     } else if (tool == ui::Tool::Custom && selectedCustomToolId >= 0 && selectedCustomToolId < (int)userRegistry.size()) {
         fig = userRegistry[selectedCustomToolId]->clone();
-        sf::FloatRect bounds = fig->getLocalBoundingBox();
-        if (bounds.width > 0 && bounds.height > 0) {
-            fig->scale.x *= width / bounds.width;
-            fig->scale.y *= height / bounds.height;
-        }
+
+
+
+
+
     }
 
     if (fig && tool != ui::Tool::Custom) {
@@ -699,12 +699,14 @@ int main() {
 
               auto fig = createFigure(currentTool, width, height);
               if (fig) {
-                if (scene.customOriginActive) {
-                  fig->parentOrigin = scene.customOriginPos;
-                  fig->anchor = center - scene.customOriginPos;
-                } else {
-                  fig->anchor = center;
-                  fig->parentOrigin = sf::Vector2f(0.f, 0.f);
+                if (currentTool != ui::Tool::Custom) {
+                  if (scene.customOriginActive) {
+                    fig->parentOrigin = scene.customOriginPos;
+                    fig->anchor = center - scene.customOriginPos;
+                  } else {
+                    fig->anchor = center;
+                    fig->parentOrigin = sf::Vector2f(0.f, 0.f);
+                  }
                 }
                 scene.setSelectedFigure(fig.get());
                 scene.addFigure(std::move(fig));
@@ -1086,7 +1088,16 @@ int main() {
     ImGui::SFML::Update(window, deltaClock.restart());
 
     // Render UI
-    toolbar.render(currentTool, scene, selectedCustomToolId);
+    bool toolbarToolChanged = toolbar.render(currentTool, scene, selectedCustomToolId);
+    if (toolbarToolChanged && currentTool == ui::Tool::Custom &&
+        selectedCustomToolId >= 0 &&
+        selectedCustomToolId < static_cast<int>(userRegistry.size())) {
+      auto fig = userRegistry[selectedCustomToolId]->clone();
+      scene.setSelectedFigure(fig.get());
+      scene.addFigure(std::move(fig));
+      currentTool = ui::Tool::Select;
+      selectedCustomToolId = -1;
+    }
     bool fitRequested = propertiesPanel.render(scene, viewport, compoundSelection, userRegistry, toolbar);
     layerPanel.render(scene);
     createModal.render(scene, toolbar.customTools, userRegistry);
