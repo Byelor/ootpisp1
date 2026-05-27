@@ -3,7 +3,7 @@
 #include <iostream>
 #include <string>
 #include <filesystem>
-#include "Figures.hpp"
+#include "Circle.hpp"
 #include "PolylineFigure.hpp"
 
 namespace fs = std::filesystem;

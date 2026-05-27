@@ -1,5 +1,5 @@
 #include "core/CompositeFigure.hpp"
-#include "core/Figures.hpp"
+#include "core/Circle.hpp"
 #include "core/PolylineFigure.hpp"
 #include "core/Scene.hpp"
 #include "core/Viewport.hpp"

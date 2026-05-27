@@ -1,6 +1,6 @@
 #include "CompositeFigure.hpp"
 #include "Scene.hpp"
-#include "Figures.hpp"
+#include "Circle.hpp"
 #include "PolylineFigure.hpp"
 #include "MathUtils.hpp"
 #include "utils/GeometryUtils.hpp"

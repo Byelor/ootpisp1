@@ -55,6 +55,7 @@ add_executable(GraphEditor
     src/main.cpp
     src/core/Figure.cpp
     src/core/PolylineFigure.cpp
+    src/core/Circle.cpp
     src/core/Figures.cpp
     src/core/CompositeFigure.cpp
     src/core/Scene.cpp

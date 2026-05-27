@@ -379,6 +379,23 @@ namespace core {
         anchor += delta;
     }
 
+    void Figure::rotateAroundPoint(sf::Vector2f pivotAbsolute, float deltaRad) {
+        sf::Vector2f anchorAbs = getAbsoluteAnchor();
+        sf::Vector2f rel = anchorAbs - pivotAbsolute;
+
+        float c = std::cos(deltaRad);
+        float s = std::sin(deltaRad);
+        sf::Vector2f rotated(rel.x * c - rel.y * s,
+                             rel.x * s + rel.y * c);
+
+        sf::Vector2f newAnchorAbs = pivotAbsolute + rotated;
+        if (!parentFigure) {
+            anchor = newAnchorAbs - parentOrigin;
+        }
+
+        rotationAngle += deltaRad * math::RAD_TO_DEG;
+    }
+
     nlohmann::json Figure::serializeToJson() const {
         nlohmann::json j;
         j["id"] = id;

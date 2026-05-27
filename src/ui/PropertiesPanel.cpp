@@ -2,7 +2,7 @@
 #include "core/Scene.hpp"
 #include "core/CompositeFigure.hpp"
 #include "core/PolylineFigure.hpp"
-#include "core/Figures.hpp"
+#include "core/Circle.hpp"
 #include "core/MathUtils.hpp"
 #include "core/SceneSerializer.hpp"
 #include <algorithm>
