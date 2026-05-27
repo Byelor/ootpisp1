@@ -1,0 +1,45 @@
+{
+  "anchor": [
+    510.0,
+    366.5
+  ],
+  "edges": [
+    {
+      "color": [
+        0,
+        0,
+        0,
+        255
+      ],
+      "width": 2.0
+    }
+  ],
+  "fill_color": [
+    150,
+    150,
+    150,
+    255
+  ],
+  "focus1_pivot": 0,
+  "focus1_x": -87.58281707763672,
+  "focus1_y": 0.0,
+  "focus2_pivot": 0,
+  "focus2_x": 87.58281707763672,
+  "focus2_y": 0.0,
+  "id": 1,
+  "locked_angles": [],
+  "locked_sides": [],
+  "parent_origin": [
+    0.0,
+    0.0
+  ],
+  "radius_x": 141.0,
+  "radius_y": 110.5,
+  "rotation": 0.0,
+  "scale": [
+    1.0,
+    1.0
+  ],
+  "semi_major": 141.0,
+  "type": "circle"
+}

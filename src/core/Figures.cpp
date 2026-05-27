@@ -78,7 +78,19 @@ std::unique_ptr<Figure> Circle::clone() const {
 }
 
 nlohmann::json Circle::serializeToJson() const {
-    nlohmann::json j = PolylineFigure::serializeToJson();
+    nlohmann::json j = Figure::serializeToJson();
+
+    // Circle vertices are generated from radii, so do not persist the 64-point approximation.
+    if (!edges.empty()) {
+        j["edges"] = nlohmann::json::array({
+            {
+                {"width", edges.front().width},
+                {"color", {(int)edges.front().color.r, (int)edges.front().color.g,
+                           (int)edges.front().color.b, (int)edges.front().color.a}}
+            }
+        });
+    }
+
     j["radius_x"] = m_radiusX;
     j["radius_y"] = m_radiusY;
     j["focus1_x"] = m_focusOffset1.x;
