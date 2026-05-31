@@ -60,6 +60,28 @@ std::unique_ptr<Figure> Circle::clone() const {
     return copy;
 }
 
+void Circle::setAnchorKeepAbsolute(sf::Vector2f newAnchor) {
+    const sf::Vector2f absoluteFocus1 = getAbsoluteVertex(m_focusOffset1);
+    const sf::Vector2f absoluteFocus2 = getAbsoluteVertex(m_focusOffset2);
+
+    Figure::setAnchorKeepAbsolute(newAnchor);
+
+    const float inverseRotation = -getAbsoluteRotation() * math::DEG_TO_RAD;
+    const sf::Vector2f absoluteScale = getAbsoluteScale();
+
+    auto toLocalOffset = [&](sf::Vector2f absolutePoint) {
+        sf::Vector2f delta = absolutePoint - getAbsoluteAnchor();
+        sf::Vector2f unrotated = math::rotate(delta, inverseRotation);
+        return sf::Vector2f(
+            absoluteScale.x != 0.f ? unrotated.x / absoluteScale.x : 0.f,
+            absoluteScale.y != 0.f ? unrotated.y / absoluteScale.y : 0.f
+        );
+    };
+
+    m_focusOffset1 = toLocalOffset(absoluteFocus1);
+    m_focusOffset2 = toLocalOffset(absoluteFocus2);
+}
+
 nlohmann::json Circle::serializeToJson() const {
     nlohmann::json j = Figure::serializeToJson();
 

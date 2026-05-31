@@ -23,6 +23,7 @@ public:
     float getRadiusX() const { return m_radiusX; }
     float getRadiusY() const { return m_radiusY; }
     void setRadius(float rx, float ry);
+    void setAnchorKeepAbsolute(sf::Vector2f newAnchor) override;
 
     enum class FocusPivot { Anchor, OtherFocus };
 
